@@ -25,8 +25,7 @@
   },
   "dependencies": {
     "@mephisto5558/i18n": "2.x",
-    "discord.js": "14.x",
-    "teufelsbot": "github:Mephisto5558/Teufelsbot"
+    "discord.js": "14.x"
   },
   "devDependencies": {
     "@mephisto5558/eslint-config": "github:Mephisto5558/ESLint-Config"
