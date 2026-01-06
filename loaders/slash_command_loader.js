@@ -18,7 +18,7 @@ module.exports = async function slashCommandHandler() {
 
       const filePath = resolve(file.parentPath, file.name);
 
-      /** @type {Omit<command<'slash', boolean, false>, 'name' | 'category'> | undefined} */
+      /** @type {StrictOmit<command<'slash', boolean, false>, 'name' | 'category'> | undefined} */
       let commandFile;
       try { commandFile = require(filePath); }
       catch (err) {

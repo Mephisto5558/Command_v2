@@ -28,7 +28,8 @@
     "discord.js": "14.x"
   },
   "devDependencies": {
-    "@mephisto5558/eslint-config": "github:Mephisto5558/ESLint-Config"
+    "@mephisto5558/better-types": "latest",
+    "@mephisto5558/eslint-config": "latest"
   },
   "engines": {
     "node": ">=20.11.0"
