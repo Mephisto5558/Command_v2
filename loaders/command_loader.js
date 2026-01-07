@@ -1,8 +1,14 @@
+/**
+ * @import { Command } from '..'
+ * @import { Client } from 'discord.js' */
+
+
 const
   { readdir } = require('node:fs/promises'),
   { resolve } = require('node:path'),
-  { formatCommand, localizeUsage } = require('../utils'),
-  { filename, getDirectories } = require('teufelsbot/Utils');
+  { filename, getDirectories } = require('teufelsbot/Utils'),
+  { commandTypes } = require('..'),
+  { formatCommand, localizeUsage } = require('../utils');
 
 let
   enabledCommandCount = 0,
@@ -16,14 +22,14 @@ module.exports = async function commandHandler() {
 
       const filePath = resolve(file.parentPath, file.name);
 
-      /** @type {StrictOmit<command<'prefix', boolean, false>, 'name' | 'category'> | undefined} */
+      /** @type {StrictOmit<Command<['prefix'], boolean>, 'name' | 'category'> | undefined} */
       let commandFile;
       try { commandFile = require(filePath); }
       catch (err) {
         if (err.code != 'MODULE_NOT_FOUND') throw err;
       }
 
-      if (!commandFile?.prefixCommand) continue;
+      if (!commandFile?.commandTypes.includes(commandTypes.prefix)) continue;
 
       /** @type {command<'prefix', boolean, true>} */
       const

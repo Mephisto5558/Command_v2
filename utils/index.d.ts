@@ -3,13 +3,14 @@ import type {
   BaseInteraction, ChatInputCommandInteraction, Message
 } from 'discord.js';
 import type { I18nProvider, Locale } from '@mephisto5558/i18n';
+import type { Command, CommandOption, CommandType } from '..';
 import type { Database } from '../types/database';
 
 export { default as constants } from './constants';
 
 export declare function autocompleteGenerator(
   this: AutocompleteInteraction | ChatInputCommandInteraction | Message,
-  command: command<'both', boolean, true>,
+  command: Command<CommandType[], boolean>,
   target: AutocompleteFocusedOption, locale: Locale
 ): Promise<{ name: string | number; value: string | number }[] | undefined>;
 
@@ -18,12 +19,12 @@ export declare function autocompleteGenerator(
  * Returns `true` if error happend but has been handled internally. */
 export declare function checkForErrors(
   this: BaseInteraction | Message,
-  command: command<'both', boolean, true> | undefined, lang: lang
+  command: Command<CommandType[], boolean> | undefined, lang: lang
 ): Promise<[string, Record<string, string> | string | undefined] | boolean>;
 
 export declare function commandExecutionWrapper(
   this: BaseInteraction | Message,
-  command: command<'both', boolean, true> | undefined,
+  command: Command<CommandType[], boolean> | undefined,
   commandType: Exclude<keyof Database['botSettings']['cmdStats'][string], 'createdAt'>,
   lang: lang
 ): Promise<Message | undefined>;
@@ -34,7 +35,7 @@ export declare function cooldowns(
 ): number;
 
 /** @throws {Error} on non-autofixable invalid data */
-export declare function formatCommand<T extends command | commandOptions<false>>(
+export declare function formatCommand<T extends Command | CommandOption>(
   option: T, path: string, id: string, i18n: I18nProvider
 ): T;
 
@@ -53,7 +54,7 @@ export declare function getCommands(
   }[];
 }[];
 
-export declare function localizeUsage<CMD extends command<'both', false>>(
+export declare function localizeUsage<CMD extends Command>(
   command: CMD, path: string, i18n: I18nProvider
 ): [CMD['usage'], Record<string, CMD['usage']>] | [];
 
@@ -61,6 +62,6 @@ export declare function permissionTranslator<T extends string | string[] | undef
   perms?: T, locale?: Locale, i18n: I18nProvider
 ): T extends undefined ? [] : T extends string ? string : string[];
 
-export declare function slashCommandsEqual<T extends command<'both', boolean, true> | commandOptions<true> | undefined>(
+export declare function slashCommandsEqual<T extends Command<CommandType[], boolean> | CommandOption<CommandType[], boolean> | undefined>(
   a: T, b: T
 ): boolean;

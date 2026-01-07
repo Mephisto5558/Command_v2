@@ -1,8 +1,13 @@
+/**
+ * @import { Command } from '..'
+ * @import { Client } from 'discord.js' */
+
 const
   { Events } = require('discord.js'),
   { readdir } = require('node:fs/promises'),
   { resolve } = require('node:path'),
-  { formatCommand, slashCommandsEqual } = require('@mephisto5558/command'),
+  { commandTypes } = require('..'),
+  { formatCommand, slashCommandsEqual } = require('../utils'),
   { errorHandler, filename, getDirectories } = require('teufelsbot/Utils');
 
 /** @this {Client} */
@@ -18,14 +23,14 @@ module.exports = async function slashCommandHandler() {
 
       const filePath = resolve(file.parentPath, file.name);
 
-      /** @type {StrictOmit<command<'slash', boolean, false>, 'name' | 'category'> | undefined} */
+      /** @type {StrictOmit<Command<['slash'], boolean>, 'name' | 'category'> | undefined} */
       let commandFile;
       try { commandFile = require(filePath); }
       catch (err) {
         if (err.code != 'MODULE_NOT_FOUND') throw err;
       }
 
-      if (!commandFile?.slashCommand) continue;
+      if (!commandFile?.commandTypes.includes(commandTypes.slash)) continue;
 
       /** @type {command<'slash', boolean, true>} */
       let command;
