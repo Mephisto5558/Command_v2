@@ -1,14 +1,16 @@
-/** @import { autocompleteGenerator } from './index.js' */
+/**
+ * @import { CommandOption, CommandType } from '../index.js'
+ * @import { autocompleteGenerator as autocompleteGeneratorT } from './index.js' */
 
 const
   { BaseInteraction } = require('discord.js'),
-  { autocompleteOptionsMaxAmt } = require('./constants.js');
+  { autocompleteOptionsMaxAmt } = require('./constants');
 
 /**
- * @this {ThisParameterType<autocompleteGenerator>}
+ * @this {ThisParameterType<autocompleteGeneratorT>}
  * @param {string} searchValue
  * @param {lang<true>} lang
- * @param {commandOptions['autocompleteOptions'] | { name: unknown; value: unknown } | undefined} options
+ * @param {CommandOption<CommandType[]>['autocompleteOptions'] | undefined} options
  * @returns {Promise<[] | { name: string, value: string | number }[]>} */
 async function autocompleteFormatter(searchValue, lang, options) {
   if (!options) return [];
@@ -30,13 +32,12 @@ async function autocompleteFormatter(searchValue, lang, options) {
   return [options];
 }
 
-/** @type {autocompleteGenerator} */
+/** @type {autocompleteGeneratorT} */
 module.exports = async function autocompleteGenerator(command, target, locale) {
   const
     group = this instanceof BaseInteraction ? this.options.getSubcommandGroup(false) : undefined,
     subcommand = this instanceof BaseInteraction ? this.options.getSubcommand(false) : undefined;
 
-  /** @type {commandOptions[]} */
   let [...options] = command.options;
   if (group) ({ options } = options.find(e => e.name == group));
   if (subcommand) ({ options } = options.find(e => e.name == subcommand));

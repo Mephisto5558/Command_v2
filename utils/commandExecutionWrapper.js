@@ -1,11 +1,11 @@
-/** @import { commandExecutionWrapper } from './index.js' */
+/** @import { commandExecutionWrapper as commandExecutionWrapperT } from './index.js' */
 
 const
   { ChatInputCommandInteraction, Colors, EmbedBuilder, MessageFlags } = require('discord.js'),
-  checkForErrors = require('./checkForErrors.js'),
-  { errorHandler } = require('teufelsbot/Utils');
+  checkForErrors = require('./checkForErrors'),
+  errorHandler = require('./errorHandler');
 
-/** @type {commandExecutionWrapper} */
+/** @type {commandExecutionWrapperT} */
 module.exports = async function commandExecutionWrapper(command, commandType, lang) {
   lang.config.backupPaths[0] = 'events.command';
 
@@ -16,7 +16,7 @@ module.exports = async function commandExecutionWrapper(command, commandType, la
   }
 
   const
-    commandName = command.aliasOf ?? command.name,
+    commandName = (command.aliasOf ?? command).name,
 
     cmdLang = this.client.i18n.getTranslator({
       locale: lang.config.locale, backupPaths: command ? [`commands.${command.category}.${commandName}`] : undefined

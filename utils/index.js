@@ -11,8 +11,7 @@ const utils = {
   // getCommandName: require('./getCommandName'),
   getCommands: require('./getCommands'),
   localizeUsage: require('./localizeUsage'),
-  permissionTranslator: require('./permissionTranslator'),
-  slashCommandsEqual: require('./slashCommandsEqual')
+  permissionTranslator: require('./permissionTranslator')
 };
 
 module.exports = utils;

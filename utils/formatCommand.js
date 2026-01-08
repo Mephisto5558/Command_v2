@@ -55,12 +55,11 @@ module.exports = function formatCommand(option, path, id, i18n) {
     if (localizedDescription) option.descriptionLocalizations[locale] = localizedDescription.slice(0, descriptionMaxLength);
     else if (!option.disabled) log.warn(`Missing "${locale}" description localization for option "${option.name}" (${id}.description)`);
 
-    if ('choices' in option) {
+    if ('choices' in option && option.choices) {
       if (option.choices.length > choicesMaxAmt)
         throw new Error(`Too many choices (${option.choices.length}) found for option "${option.name}"). Max is ${choicesMaxAmt}.`);
 
-      let /** @type {NonNullable<commandOptions<true>['choices']>[number]} */ choice;
-      for (choice of option.choices) {
+      for (const choice of option.choices) {
         if ('__SCHandlerCustom' in choice) {
           delete choice.__SCHandlerCustom; /* eslint-disable-line no-underscore-dangle */
           continue;
@@ -101,7 +100,7 @@ module.exports = function formatCommand(option, path, id, i18n) {
 
         lang.config.backupPaths.push(`${lang.config.backupPaths[0]}.${subcommand.replaceAll(/_./g, e => e[1].toUpperCase())}`);
 
-        /** @type {command} */
+        /** @type {typeof option} */
         const subCommandFile = require(resolve(path, `${subcommand}.js`));
         return subCommandFile.run.call(this, lang, additionalParams, ...args);
       };

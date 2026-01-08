@@ -2,7 +2,7 @@
 
 const
   { ApplicationCommandOptionType, ChatInputCommandInteraction } = require('discord.js'),
-  { msInSecond } = require('teufelsbot/Utils/timeFormatter');
+  msInSecond = require('./timeFormatter');
 
 /**
  * A wrapper for {@link cooldown}, used for subcommand(group) support.

@@ -1,45 +1,43 @@
-/* eslint-disable custom/cyclomatic-complexity, sonarjs/cognitive-complexity, no-underscore-dangle
--- will be fixed when commands are moved to their own lib */
-
 /**
- * @import { BaseInteraction } from 'discord.js'
- * @import Utils from 'teufelsbot/Utils' */
+ * @import { BaseInteraction, ChatInputCommandInteraction } from 'discord.js'
+ * @import { Command, CommandType, CommandOption } from '../index.js'
+ * @import { checkForErrors as checkForErrorsT } from '.' */
 
 const
   { ChannelType, Colors, CommandInteraction, EmbedBuilder, Message, MessageFlags, PermissionFlagsBits, Role, inlineCode } = require('discord.js'),
-  { autocompleteGenerator, permissionTranslator } = require('@mephisto5558/command'),
-  /** @type {Utils['commandMention']} */ commandMention = require('teufelsbot/Utils/commandMention'),
-  /** @type {Utils['cooldowns']} */ cooldowns = require('./cooldowns'),
-  /** @type {Utils['timeFormatter']} */ { msInSecond } = require('teufelsbot/Utils/timeFormatter'),
-  /** @type {Utils['DiscordAPIErrorCodes']} */ DiscordAPIErrorCodes = require('teufelsbot/Utils/DiscordAPIErrorCodes.json'),
+  autocompleteGenerator = require('./autocompleteGenerator'),
+  cooldowns = require('./cooldowns'),
+  permissionTranslator = require('./permissionTranslator'),
+  commandMention = require('./commandMention'),
+  { msInSecond } = require('./.timeFormatter'),
+  DiscordAPIErrorCodes = require('./DiscordAPIErrorCodes.json'),
 
   PERM_ERR_MSG_DELETETIME = msInSecond * 10,
 
   isValidType = /** @param {Message | BaseInteraction} type */ type => type instanceof Message || type.isChatInputCommand();
 
 /**
- * @this {Interaction | Message}
- * @param {command<'both', boolean, true>} command
+ * @this {ChatInputCommandInteraction | Message}
+ * @param {Command<CommandType[], boolean> | CommandOption<CommandType[], boolean>} command
  * @param {lang} lang
  * @returns {Promise<[string, { option: string; description: string }] | [string, { option: string; availableOptions?: string }] | false>} */
 async function checkOptions(command, lang) {
-  /** @type {command<'both', boolean, true> | commandOptions<true>} */
   let option = command;
   if (this.options?._group) {
     option = option.options.find(e => e.name == this.options._group);
-    if (!(option.dmPermission ?? command.dmPermission) && this.channel.type == ChannelType.DM) return ['guildOnly'];
+    if (!(option.dmPermission && command.dmPermission) && this.channel.type == ChannelType.DM) return ['guildOnly'];
   }
   if (this.options?._subcommand) {
     option = option.options.find(e => e.name == this.options._subcommand);
-    if (!(option.dmPermission ?? command.dmPermission) && this.channel.type == ChannelType.DM) return ['guildOnly'];
+    if ((option.dmPermission && command.dmPermission) && this.channel.type == ChannelType.DM) return ['guildOnly'];
   }
 
-  if (!option.options) return false;
+  if (!option.options.length) return false;
 
   for (const [i, data] of option.options.entries()) {
     const {
-      required, name, description, descriptionLocalizations, autocomplete,
-      strictAutocomplete, autocompleteOptions, choices, channelTypes
+      name, required, description, descriptionLocalizations,
+      autocomplete, strictAutocomplete, autocompleteOptions, choices, channelTypes
     } = data;
 
     if (required && !this.options?.get(name) && !this.args?.[i]) {
@@ -60,7 +58,7 @@ async function checkOptions(command, lang) {
     const autocompleteIsUsed = () => !!(autocomplete && strictAutocomplete && (this.options?.get(name) ?? this.args?.[i]));
     if (
       isValidType(this) && autocompleteIsUsed() && !(await autocompleteGenerator.call(
-        /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unnecessary-condition,
+        /* eslint-disable @typescript-eslint/no-unsafe-assignment,
         @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- false positive/ts bug */
         this, command, { name, value: this.options?.get(name).value ?? this.args?.[i] ?? '' }, this.guild?.db.config.lang ?? this.guild?.localeCode
       )).some(e => (e.toLowerCase?.() ?? e.value.toLowerCase()) === (this.options?.get(name).value ?? this.args?.[i])?.toLowerCase())
@@ -86,8 +84,8 @@ async function checkOptions(command, lang) {
 }
 
 /**
- * @this {GuildInteraction | Message<true>}
- * @param {command<'both', boolean, true>} command
+ * @this {ChatInputCommandInteraction<'cached'> | Message<true>}
+ * @param {Command<CommandType[], boolean>} command
  * @param {lang} lang
  * @returns {Promise<boolean>} `false` if no permission issues have been found. */
 async function checkPerms(command, lang) {
@@ -123,7 +121,7 @@ async function checkPerms(command, lang) {
   return true;
 }
 
-/** @type {Utils['checkForErrors']} */
+/** @type {checkForErrorsT} */
 module.exports = async function checkForErrors(command, lang) {
   if (!command) {
     if (this instanceof Message) {
@@ -161,7 +159,7 @@ module.exports = async function checkForErrors(command, lang) {
 
   if (command.category == 'nsfw' && !this.channel.nsfw) return ['nsfw'];
 
-  if (command.options) {
+  if (command.options.length) {
     const err = await checkOptions.call(this, command, lang);
     if (err) return err;
   }

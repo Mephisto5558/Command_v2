@@ -7,8 +7,7 @@ const
   { readdir } = require('node:fs/promises'),
   { resolve } = require('node:path'),
   { commandTypes } = require('..'),
-  { formatCommand, slashCommandsEqual } = require('../utils'),
-  { errorHandler, filename, getDirectories } = require('teufelsbot/Utils');
+  { formatCommand, errorHandler, filename, getDirectories } = require('../utils');
 
 /** @this {Client} */
 module.exports = async function slashCommandHandler() {
@@ -32,7 +31,7 @@ module.exports = async function slashCommandHandler() {
 
       if (!commandFile?.commandTypes.includes(commandTypes.slash)) continue;
 
-      /** @type {command<'slash', boolean, true>} */
+      /** @type {Command<['slash'], boolean>} */
       let command;
       try { command = formatCommand(commandFile, filePath, `commands.${subFolder.toLowerCase()}.${filename(file.name)}`, this.i18n); }
       catch (err) {
@@ -46,7 +45,7 @@ module.exports = async function slashCommandHandler() {
 
       if (!command.disabled && !command.skip) {
         for (const [, applicationCommand] of await applicationCommands) {
-          if (!slashCommandsEqual(command, applicationCommand)) continue;
+          if (!command.isEqualTo(applicationCommand)) continue;
 
           log(`Skipped Slash Command ${command.name}`);
 

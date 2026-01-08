@@ -61,7 +61,3 @@ export declare function localizeUsage<CMD extends Command>(
 export declare function permissionTranslator<T extends string | string[] | undefined>(
   perms?: T, locale?: Locale, i18n: I18nProvider
 ): T extends undefined ? [] : T extends string ? string : string[];
-
-export declare function slashCommandsEqual<T extends Command<CommandType[], boolean> | CommandOption<CommandType[], boolean> | undefined>(
-  a: T, b: T
-): boolean;
