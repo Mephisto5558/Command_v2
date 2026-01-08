@@ -54,10 +54,10 @@ export class Command {
     if (config.noDefer) this.noDefer = config.noDefer;
     if (config.ephemeralDefer) this.ephemeralDefer = config.ephemeralDefer;
 
-    if (config.options) this.options = config.options;
+    if (config.options) this.options = config.options.map(e => (e instanceof CommandOption ? e : new CommandOption(e)));
     if (config.beta) this.beta = config.beta;
 
-    this.commandTypes = config.commandTypes;
+    this.types = config.types;
     this.disabledReason = config.disabledReason;
 
     this.run = config.run;
@@ -109,7 +109,7 @@ export class CommandOption {
     }
     if (config.dmPermission) this.dmPermission = config.dmPermission;
     if (config.strictAutocomplete) this.strictAutocomplete = config.strictAutocomplete;
-    if (config.options) this.options = config.options;
+    if (config.options) this.options = config.options.map(e => (e instanceof CommandOption ? e : new CommandOption(e)));
 
     this.name = config.name;
     this.type = config.type;

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/consistent-indexed-object-style -- using index signature to improve readability for lib user */
+
 import type {
   ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionType, ApplicationCommandType, AutocompleteInteraction,
   ChannelType, PermissionFlags, _NonNullableFields
@@ -15,6 +17,54 @@ export type CommandType = 'slash' | 'prefix';
 
 export declare const commandTypes: { readonly [K in CommandType]: K };
 
+type StrictCommand<CT extends readonly CommandType[], DM extends boolean> = Command<NoInfer<CT>, NoInfer<DM>>;
+type StrictCommandOption<CT extends readonly CommandType[], DM extends boolean> = CommandOption<NoInfer<CT>, NoInfer<DM>>;
+
+/* eslint-disable-next-line @typescript-eslint/consistent-type-definitions */
+export interface CommandConfig<CT extends readonly CommandType[], DM extends boolean> {
+  types: CT;
+  usage?: { usage?: string; examples?: string } & {};
+  aliases?: { [K in NoInfer<CT>[number]]?: string[] } & {};
+  cooldowns?: { guild?: number; channel?: number; user?: number } & {};
+  permissions?: { client?: PermissionFlags[]; user?: PermissionFlags[] } & {};
+  dmPermission?: DM;
+
+  disabled?: boolean;
+  disabledReason?: string;
+
+  noDefer?: boolean;
+  ephemeralDefer?: boolean;
+
+  options?: (StrictCommandOption<CT, DM> | CommandOptionConfig<CT, DM>)[];
+
+  beta?: true;
+
+  run: StrictCommand<CT, DM>['run'];
+}
+
+/* eslint-disable-next-line @typescript-eslint/consistent-type-definitions */
+export interface CommandOptionConfig<CT extends readonly CommandType[], DM extends boolean> {
+  name: string;
+  type: keyof typeof ApplicationCommandOptionType;
+  required?: boolean;
+  cooldowns?: { guild?: number; channel?: number; user?: number } & {};
+  dmPermission?: DM;
+
+  disabled?: boolean;
+  disabledReason?: string;
+
+  strictAutocomplete?: boolean;
+  autocompleteOptions?: StrictCommandOption<CT, DM>['autocompleteOptions'];
+
+  choices?: StrictCommandOption<CT, DM>['choices'];
+
+  channelTypes?: ChannelType[];
+
+  options?: (StrictCommandOption<CT, DM> | CommandOptionConfig<CT, DM>)[];
+
+  run?: StrictCommandOption<CT, DM>['run'];
+}
+
 export declare class Command<
   const commandTypes extends readonly CommandType[] = [],
   const runsInDM extends boolean = false
@@ -31,19 +81,20 @@ export declare class Command<
   category: string;
 
   type: ApplicationCommandType;
-
-  usage: Record<'usage' | 'examples', string | undefined>;
-  aliases: Partial<Record<NoInfer<commandTypes>[number], string[]>>;
-  cooldowns: Record<'guild' | 'channel' | 'user', number>;
-  permissions: Record<'client' | 'user', PermissionFlags[]>;
-  commandTypes: commandTypes;
+  types: commandTypes;
+  usage: { [K in 'usage' | 'examples']: string | undefined } & {};
+  aliases: { [K in NoInfer<commandTypes>[number]]: string[] } & {};
+  cooldowns: { [K in 'guild' | 'channel' | 'user']: number } & {};
+  permissions: { [K in 'client' | 'user']: PermissionFlags[] } & {};
   dmPermission: runsInDM;
+
   disabled: boolean;
   disabledReason: string | undefined;
+
   noDefer: boolean;
   ephemeralDefer: boolean;
 
-  options: CommandOption<NoInfer<commandTypes>, NoInfer<runsInDM>>[];
+  options: StrictCommandOption<commandTypes, runsInDM>[];
 
   beta?: boolean;
 
@@ -52,24 +103,7 @@ export declare class Command<
     lang: Translator, client: Client
   ) => Promise<never>;
 
-  constructor(config: {
-    usage?: Partial<_NonNullableFields<Command<NoInfer<commandTypes>, NoInfer<runsInDM>>['usage']>>;
-    aliases?: Command<NoInfer<commandTypes>, NoInfer<runsInDM>>['aliases'];
-    cooldowns?: Partial<Command<NoInfer<commandTypes>, NoInfer<runsInDM>>['cooldowns']>;
-    permissions?: Partial<Record<keyof Command<NoInfer<commandTypes>, NoInfer<runsInDM>>['permissions'], (keyof PermissionFlags)[]>>;
-    commandTypes: commandTypes;
-    dmPermission?: runsInDM;
-    disabled?: boolean;
-    disabledReason?: string;
-    noDefer?: boolean;
-    ephemeralDefer?: boolean;
-
-    options?: Command<NoInfer<commandTypes>, NoInfer<runsInDM>>['options'];
-
-    beta?: true;
-
-    run: Command<NoInfer<commandTypes>, NoInfer<runsInDM>>['run'];
-  });
+  constructor(config: CommandConfig<commandTypes, runsInDM>);
 
   isEqualTo(cmd: Command<CommandType[] | ApplicationCommand, boolean>): boolean;
 }
@@ -81,50 +115,44 @@ export declare class CommandOption<
   name: string;
 
   /** Currently not used */
-  nameLocalizations?: Command<NoInfer<commandTypes>, NoInfer<runsInDM>>['nameLocalizations'];
+  nameLocalizations?: Record<Locale, string>;
   description: string;
   descriptionLocalizations: Record<Locale, string>;
 
   type: ApplicationCommandOptionType;
 
   required: boolean;
-  cooldowns: Command<NoInfer<commandTypes>, NoInfer<runsInDM>>['cooldowns'];
+  cooldowns: { [K in 'guild' | 'channel' | 'user']: number } & {};
   dmPermission: runsInDM;
+
+  disabled: boolean;
+  disabledReason: string | undefined;
+
   get autocomplete(): boolean;
   strictAutocomplete: boolean;
   autocompleteOptions: autocompleteOptions | autocompleteOptions[] | (
       (
-        this: ResolveContext<{ slash: AutocompleteInteraction<'cached'>; prefix: Message }, commandTypes>,
+        this: ResolveContext<{ slash: AutocompleteInteraction<'cached'>; prefix: Message }, NoInfer<commandTypes>>,
         query: string
       ) => autocompleteOptions[] | Promise<autocompleteOptions>
     ) | undefined;
 
   choices: {
     name: string;
-    nameLocalizations?: CommandOption<NoInfer<commandTypes>, NoInfer<runsInDM>>['nameLocalizations'];
+    nameLocalizations?: Record<Locale, string>;
     value: string | number;
   }[] | undefined;
 
   channelTypes: ChannelType[] | undefined;
 
-  options: CommandOption<commandTypes, runsInDM>[];
+  options: StrictCommandOption<commandTypes, runsInDM>[];
 
-  constructor(config: {
-    name: string;
-    type: keyof typeof ApplicationCommandOptionType;
-    required?: boolean;
-    cooldowns?: ConstructorParameters<typeof Command<NoInfer<commandTypes>, NoInfer<runsInDM>>>[0]['cooldowns'];
-    dmPermission?: runsInDM;
+  run: (
+    this: ResolveContext<{ slash: Interaction; prefix: Message }, NoInfer<commandTypes>>,
+    lang: Translator, client: Client
+  ) => Promise<never>;
 
-    strictAutocomplete?: boolean;
-    autocompleteOptions?: NonNullable<CommandOption<commandTypes, runsInDM>['autocompleteOptions']>;
-
-    choices?: NonNullable<CommandOption<commandTypes, runsInDM>['choices']>;
-
-    channelTypes?: (keyof typeof ChannelType)[];
-
-    options?: CommandOption<commandTypes, runsInDM>['options'];
-  });
+  constructor(config: CommandOptionConfig<commandTypes, runsInDM>);
 
   isEqualTo(opt: CommandOption<CommandType[], boolean> | ApplicationCommandOption): boolean;
 }
