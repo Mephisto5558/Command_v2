@@ -10,8 +10,7 @@ type ResolveContext<MAP, KEYS extends (keyof MAP)[]> = MAP[KEYS[number]];
 type autocompleteOptions = string | number | { name: string; value: string };
 export type CommandType = 'slash' | 'prefix';
 
-/* eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion */
-export declare const commandTypes = {} as Record<CommandType, string>;
+export declare const commandTypes: { readonly [K in CommandType]: K };
 
 export declare class Command<
   const commandTypes extends readonly CommandType[] = [],
