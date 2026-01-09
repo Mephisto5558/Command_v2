@@ -6,40 +6,31 @@
 const
   { readdir } = require('node:fs/promises'),
   { resolve } = require('node:path'),
-  { filename, getDirectories } = require('teufelsbot/Utils'),
   { commandTypes } = require('..'),
-  { formatCommand, localizeUsage } = require('../utils');
+  { getDirectories } = require('../utils');
 
 let
   enabledCommandCount = 0,
   disabledCommandCount = 0;
 
 /** @this {Client<false>} */
-module.exports = async function commandHandler() {
+module.exports = async function commandLoader() {
   for (const subFolder of await getDirectories('./Commands')) {
     for (const file of await readdir(`./Commands/${subFolder}`, { withFileTypes: true })) {
       if (!file.name.endsWith('.js') && !file.isDirectory()) continue;
 
       const filePath = resolve(file.parentPath, file.name);
 
-      /** @type {StrictOmit<Command<['prefix'], boolean>, 'name' | 'category'> | undefined} */
+      /** @type {Command<['prefix'], boolean>} */
       let commandFile;
       try { commandFile = require(filePath); }
       catch (err) {
         if (err.code != 'MODULE_NOT_FOUND') throw err;
       }
 
-      if (!commandFile?.commandTypes.includes(commandTypes.prefix)) continue;
+      if (!commandFile?.types.includes(commandTypes.prefix)) continue;
 
-      const
-        command = formatCommand(commandFile, filePath, `commands.${subFolder.toLowerCase()}.${filename(file.name)}`, this.i18n),
-
-        /* For some reason, this alters the slash command as well.
-         That's why localizeUsage is only here and not in `Utils/formatSlashCommand.js`. */
-        usage = localizeUsage(command, `commands.${command.category}.${command.name}`, this.i18n);
-
-      command.usage = usage[0];
-      command.usageLocalizations = usage[1];
+      const command = commandFile.init(this.i18n, filePath, log);
 
       this.prefixCommands.set(command.name, command);
       if (command.disabled) {

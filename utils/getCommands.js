@@ -23,7 +23,7 @@ module.exports = function getCommands(lang) {
       commandName: cmd.name,
       commandUsage: (
         /* eslint-disable-next-line @typescript-eslint/restrict-plus-operands -- will be fixed when commands are moved to their own lib */
-        (cmd.commandTypes.includes(commandTypes.slash) ? lang('others.getCommands.lookAtOptionDesc') : '')
+        (cmd.types.includes(commandTypes.slash) ? lang('others.getCommands.lookAtOptionDesc') : '')
         + (lang(`commands.${cmd.category}.${cmd.name}.usage.usage`)?.replaceAll(/slash command:/gi, '') ?? '') || lang('others.getCommands.noInfo')
       ).trim().replaceAll('\n', '<br>&nbsp'),
       commandDescription: lang(`commands.${cmd.category}.${cmd.name}.description`) ?? cmd.description,

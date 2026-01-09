@@ -34,10 +34,7 @@ export declare function cooldowns(
   name: string, cooldowns?: Record<'user' | 'guild' | 'channel', number>
 ): number;
 
-/** @throws {Error} on non-autofixable invalid data */
-export declare function formatCommand<T extends Command | CommandOption>(
-  option: T, path: string, id: string, i18n: I18nProvider
-): T;
+export declare function filename(path: string): string;
 
 export declare function getCommands(
   this: Client,
@@ -54,9 +51,9 @@ export declare function getCommands(
   }[];
 }[];
 
-export declare function localizeUsage<CMD extends Command>(
-  command: CMD, path: string, i18n: I18nProvider
-): [CMD['usage'], Record<string, CMD['usage']>] | [];
+export declare function getDirectories(
+  path: string
+): Promise<string>;
 
 export declare function permissionTranslator<T extends string | string[] | undefined>(
   perms?: T, locale?: Locale, i18n: I18nProvider

@@ -1,17 +1,18 @@
 const utils = {
   autocompleteGenerator: require('./autocompleteGenerator'),
-  commandExecutionWrapper: require('./commandExecutionWrapper'),
   checkForErrors: require('./checkForErrors'),
+  commandExecutionWrapper: require('./commandExecutionWrapper'),
   constants: require('./constants'),
+  cooldowns: require('./cooldowns'),
+  filename: require('./filename'),
+  getCommands: require('./getCommands'),
+  getDirectories: require('./getDirectories'),
+  permissionTranslator: require('./permissionTranslator')
 
   /* commandMention: require('./commandMention'),
      componentHandler: require('./componentHandler'), */
-  formatCommand: require('./formatCommand'),
 
   // getCommandName: require('./getCommandName'),
-  getCommands: require('./getCommands'),
-  localizeUsage: require('./localizeUsage'),
-  permissionTranslator: require('./permissionTranslator')
 };
 
 module.exports = utils;

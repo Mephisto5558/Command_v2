@@ -2,10 +2,10 @@
 
 import type {
   ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionType, ApplicationCommandType, AutocompleteInteraction,
-  ChannelType, PermissionFlags, _NonNullableFields
+  ChannelType, PermissionFlags, PermissionsBitField, _NonNullableFields
 } from 'discord.js';
 import type * as __ from '@mephisto5558/better-types'; /* eslint-disable-line import-x/no-namespace -- load in global definitions */
-import type { Locale, Translator } from '@mephisto5558/i18n';
+import type { I18nProvider, Locale, Translator } from '@mephisto5558/i18n';
 
 export * from './utils/index.js';
 export * as loaders from './loaders';
@@ -56,7 +56,7 @@ export interface CommandOptionConfig<CT extends readonly CommandType[], DM exten
   strictAutocomplete?: boolean;
   autocompleteOptions?: StrictCommandOption<CT, DM, AO>['autocompleteOptions'];
 
-  choices?: StrictCommandOption<CT, DM, AO>['choices'];
+  choices?: (string | number)[];
 
   channelTypes?: ChannelType[];
 
@@ -75,23 +75,31 @@ export declare class Command<
   const commandTypes extends readonly CommandType[] = [],
   const runsInDM extends boolean = false
 > {
-  name: string;
-  aliasOf?: Command;
+  name: Lowercase<string>;
+  id: `commands.${Command['category']}.${Command['name']}`;
+
+  aliasOf: Command | undefined;
 
   /** Currently not used */
-  nameLocalizations?: Record<Locale, string>;
+  nameLocalizations?: Record<Locale, Lowercase<string>>;
 
   description: string;
   descriptionLocalizations: Record<Locale, string>;
 
-  category: string;
+  category: Lowercase<string>;
 
   type: ApplicationCommandType;
   types: commandTypes;
+
   usage: { [K in 'usage' | 'examples']: string | undefined } & {};
+  usageLocalizations: Record<Locale, StrictCommand<commandTypes, runsInDM>['usage']>;
+
   aliases: { [K in NoInfer<commandTypes>[number]]: string[] } & {};
   cooldowns: { [K in 'guild' | 'channel' | 'user']: number } & {};
+
   permissions: { [K in 'client' | 'user']: PermissionFlags[] } & {};
+  get defaultMemberPermissions(): PermissionsBitField;
+
   dmPermission: runsInDM;
 
   disabled: boolean;
@@ -114,6 +122,12 @@ export declare class Command<
 
   constructor(config: CommandConfig<commandTypes, runsInDM>);
 
+  init(i18n: I18nProvider, filePath: string, logger: {
+    log: typeof console.log;
+    warn: typeof console.warn;
+    error: typeof console.error;
+  }): this;
+
   isEqualTo(cmd: Command<CommandType[] | ApplicationCommand, boolean>): boolean;
 }
 
@@ -122,10 +136,11 @@ export declare class CommandOption<
   const runsInDM extends boolean = false,
   const additionalRunOpts = never
 > {
-  name: string;
+  name: Lowercase<string>;
+  id: `${string}.options.${CommandOption['name']}`;
 
   /** Currently not used */
-  nameLocalizations?: Record<Locale, string>;
+  nameLocalizations?: Record<Locale, Lowercase<string>>;
   description: string;
   descriptionLocalizations: Record<Locale, string>;
 
@@ -170,5 +185,10 @@ export declare class CommandOption<
 
   constructor(config: CommandOptionConfig<commandTypes, runsInDM, additionalRunOpts>);
 
+  init(i18n: I18nProvider, parentId: Command['id'] | CommandOption['id'], logger: {
+    log: typeof console.log;
+    warn: typeof console.warn;
+    error: typeof console.error;
+  }): this;
   isEqualTo(opt: CommandOption<CommandType[], boolean> | ApplicationCommandOption): boolean;
 }

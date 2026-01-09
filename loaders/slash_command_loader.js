@@ -7,7 +7,7 @@ const
   { readdir } = require('node:fs/promises'),
   { resolve } = require('node:path'),
   { commandTypes } = require('..'),
-  { formatCommand, errorHandler, filename, getDirectories } = require('../utils');
+  { errorHandler, filename, getDirectories } = require('../utils');
 
 /** @this {Client} */
 module.exports = async function slashCommandHandler() {
@@ -29,11 +29,11 @@ module.exports = async function slashCommandHandler() {
         if (err.code != 'MODULE_NOT_FOUND') throw err;
       }
 
-      if (!commandFile?.commandTypes.includes(commandTypes.slash)) continue;
+      if (!commandFile?.types.includes(commandTypes.slash)) continue;
 
       /** @type {Command<['slash'], boolean>} */
       let command;
-      try { command = formatCommand(commandFile, filePath, `commands.${subFolder.toLowerCase()}.${filename(file.name)}`, this.i18n); }
+      try { command = commandFile.init(this.i18n, filePath, log); }
       catch (err) {
         if (this.botType == 'dev') throw err;
         log.error(`Error on formatting command file ${filePath}:\n`, err);
