@@ -18,7 +18,7 @@ export type CommandType = 'slash' | 'prefix';
 export declare const commandTypes: { readonly [K in CommandType]: K };
 
 type StrictCommand<CT extends readonly CommandType[], DM extends boolean> = Command<NoInfer<CT>, NoInfer<DM>>;
-type StrictCommandOption<CT extends readonly CommandType[], DM extends boolean> = CommandOption<NoInfer<CT>, NoInfer<DM>>;
+type StrictCommandOption<CT extends readonly CommandType[], DM extends boolean, AO = never> = CommandOption<NoInfer<CT>, NoInfer<DM>, NoInfer<AO>>;
 
 /* eslint-disable-next-line @typescript-eslint/consistent-type-definitions */
 export interface CommandConfig<CT extends readonly CommandType[], DM extends boolean> {
@@ -43,7 +43,7 @@ export interface CommandConfig<CT extends readonly CommandType[], DM extends boo
 }
 
 /* eslint-disable-next-line @typescript-eslint/consistent-type-definitions */
-export interface CommandOptionConfig<CT extends readonly CommandType[], DM extends boolean> {
+export interface CommandOptionConfig<CT extends readonly CommandType[], DM extends boolean, AO = never> {
   name: string;
   type: keyof typeof ApplicationCommandOptionType;
   required?: boolean;
@@ -54,15 +54,21 @@ export interface CommandOptionConfig<CT extends readonly CommandType[], DM exten
   disabledReason?: string;
 
   strictAutocomplete?: boolean;
-  autocompleteOptions?: StrictCommandOption<CT, DM>['autocompleteOptions'];
+  autocompleteOptions?: StrictCommandOption<CT, DM, AO>['autocompleteOptions'];
 
-  choices?: StrictCommandOption<CT, DM>['choices'];
+  choices?: StrictCommandOption<CT, DM, AO>['choices'];
 
   channelTypes?: ChannelType[];
 
+  minValue?: number;
+  maxValue?: number;
+
+  minLength?: number;
+  maxLength?: number;
+
   options?: (StrictCommandOption<CT, DM> | CommandOptionConfig<CT, DM>)[];
 
-  run?: StrictCommandOption<CT, DM>['run'];
+  run?: StrictCommandOption<CT, DM, AO>['run'];
 }
 
 export declare class Command<
@@ -99,7 +105,10 @@ export declare class Command<
   beta?: boolean;
 
   run: (
-    this: ResolveContext<{ slash: Interaction; prefix: Message }, NoInfer<commandTypes>>,
+    this: ResolveContext<{
+      slash: Interaction<runsInDM extends false ? true : false>;
+      prefix: Message<runsInDM extends false ? true : false>;
+    }, NoInfer<commandTypes>>,
     lang: Translator, client: Client
   ) => Promise<never>;
 
@@ -110,7 +119,8 @@ export declare class Command<
 
 export declare class CommandOption<
   const commandTypes extends readonly CommandType[] = [],
-  const runsInDM extends boolean = false
+  const runsInDM extends boolean = false,
+  const additionalRunOpts = never
 > {
   name: string;
 
@@ -145,14 +155,20 @@ export declare class CommandOption<
 
   channelTypes: ChannelType[] | undefined;
 
+  minValue?: number;
+  maxValue?: number;
+
+  minLength?: number;
+  maxLength?: number;
+
   options: StrictCommandOption<commandTypes, runsInDM>[];
 
   run: (
-    this: ResolveContext<{ slash: Interaction; prefix: Message }, NoInfer<commandTypes>>,
-    lang: Translator, client: Client
+    this: ThisParameterType<StrictCommand<commandTypes, runsInDM>['run']>,
+    lang: Translator, options: additionalRunOpts, client: Client
   ) => Promise<never>;
 
-  constructor(config: CommandOptionConfig<commandTypes, runsInDM>);
+  constructor(config: CommandOptionConfig<commandTypes, runsInDM, additionalRunOpts>);
 
   isEqualTo(opt: CommandOption<CommandType[], boolean> | ApplicationCommandOption): boolean;
 }

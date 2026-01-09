@@ -31,7 +31,6 @@ module.exports = async function commandHandler() {
 
       if (!commandFile?.commandTypes.includes(commandTypes.prefix)) continue;
 
-      /** @type {command<'prefix', boolean, true>} */
       const
         command = formatCommand(commandFile, filePath, `commands.${subFolder.toLowerCase()}.${filename(file.name)}`, this.i18n),
 
