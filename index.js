@@ -29,10 +29,10 @@ function equal(a, b) {
   return true;
 }
 
-const commandTypes = {
+const commandTypes = Object.freeze({
   slash: 'slash',
   prefix: 'prefix'
-};
+});
 
 class CommandOption {
   name;
