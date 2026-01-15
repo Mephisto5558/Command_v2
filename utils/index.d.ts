@@ -29,6 +29,11 @@ export declare function commandExecutionWrapper(
   lang: lang
 ): Promise<Message | undefined>;
 
+/** Formats an application command name and id into a command mention. */
+export declare function commandMention<CommandName extends string, CommandId extends Snowflake>(
+  name: CommandName, id: CommandId
+): `</${CommandName}:${CommandId}>`;
+
 export declare function cooldowns(
   this: BaseInteraction | Message,
   name: string, cooldowns?: Record<'user' | 'guild' | 'channel', number>

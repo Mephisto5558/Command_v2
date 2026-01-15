@@ -6,13 +6,12 @@
 const
   { ChannelType, Colors, CommandInteraction, EmbedBuilder, Message, MessageFlags, PermissionFlagsBits, Role, inlineCode } = require('discord.js'),
   autocompleteGenerator = require('./autocompleteGenerator'),
+  commandMention = require('./commandMention'),
   cooldowns = require('./cooldowns'),
   permissionTranslator = require('./permissionTranslator'),
-  commandMention = require('./commandMention'),
-  { msInSecond } = require('./.timeFormatter'),
-  DiscordAPIErrorCodes = require('./DiscordAPIErrorCodes.json'),
 
-  PERM_ERR_MSG_DELETETIME = msInSecond * 10,
+  CANNOT_SEND_MESSAGE_API_ERR = 50_007,
+  PERM_ERR_MSG_DELETETIME = 1e4, // 10s
 
   isValidType = /** @param {Message | BaseInteraction} type */ type => type instanceof Message || type.isChatInputCommand();
 
@@ -113,7 +112,7 @@ async function checkPerms(command, lang) {
 
     try { await this.user.send({ content: this.url, embeds: [embed] }); }
     catch (err) {
-      if (err.code != DiscordAPIErrorCodes.CannotSendMessagesToThisUser) throw err;
+      if (err.code != CANNOT_SEND_MESSAGE_API_ERR) throw err;
     }
   }
   else await this.customReply({ embeds: [embed], flags: MessageFlags.Ephemeral }, this instanceof Message ? PERM_ERR_MSG_DELETETIME : 0);

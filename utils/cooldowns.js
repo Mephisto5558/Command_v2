@@ -2,7 +2,8 @@
 
 const
   { ApplicationCommandOptionType, ChatInputCommandInteraction } = require('discord.js'),
-  msInSecond = require('./timeFormatter');
+
+  msInSecond = 1000;
 
 /**
  * A wrapper for {@link cooldown}, used for subcommand(group) support.
