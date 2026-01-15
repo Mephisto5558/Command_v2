@@ -20,6 +20,12 @@
   "type": "commonjs",
   "main": "index.js",
   "types": "index.d.ts",
+  "files": [
+    "index.d.ts",
+    "db.d.ts",
+    "loaders",
+    "utils"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
