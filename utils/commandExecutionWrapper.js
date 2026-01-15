@@ -39,7 +39,7 @@ module.exports = async function commandExecutionWrapper(command, commandType, la
     commandName = (command.aliasOf ?? command).name,
 
     cmdLang = this.client.i18n.getTranslator({
-      locale: lang.config.locale, backupPaths: command ? [`commands.${command.category}.${commandName}`] : undefined
+      locale: lang.config.locale, backupPaths: command ? [command.id] : undefined
     });
 
   this.commandName ??= commandName; // Is undefined on `MessageComponentInteraction`s

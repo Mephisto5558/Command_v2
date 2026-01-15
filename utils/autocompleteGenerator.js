@@ -33,7 +33,7 @@ async function autocompleteFormatter(searchValue, lang, options) {
 }
 
 /** @type {autocompleteGeneratorT} */
-module.exports = async function autocompleteGenerator(command, target, locale) {
+module.exports = async function autocompleteGenerator(command, target, i18n, locale) {
   const
     group = this instanceof BaseInteraction ? this.options.getSubcommandGroup(false) : undefined,
     subcommand = this instanceof BaseInteraction ? this.options.getSubcommand(false) : undefined;
@@ -42,7 +42,7 @@ module.exports = async function autocompleteGenerator(command, target, locale) {
   if (group) ({ options } = options.find(e => e.name == group));
   if (subcommand) ({ options } = options.find(e => e.name == subcommand));
 
-  const lang = this.client.i18n.getTranslator({
+  const lang = i18n.getTranslator({
     locale, undefinedNotFound: true,
     backupPaths: [[
       'commands', command.category, command.name, 'options',

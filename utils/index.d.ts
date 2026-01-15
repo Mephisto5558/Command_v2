@@ -10,7 +10,7 @@ export { default as constants } from './constants';
 export declare function autocompleteGenerator(
   this: AutocompleteInteraction | ChatInputCommandInteraction | Message,
   command: Command<CommandType[], boolean>,
-  target: AutocompleteFocusedOption, locale: Locale
+  target: AutocompleteFocusedOption, i18n: I18nProvider, locale: Locale
 ): Promise<{ name: string | number; value: string | number }[] | undefined>;
 
 /**
