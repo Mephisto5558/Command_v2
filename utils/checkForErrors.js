@@ -110,7 +110,7 @@ async function checkPerms(command, lang) {
       void this.react('✍️'); // don't need to wait here
     }
 
-    try { await this.user.send({ content: this.url, embeds: [embed] }); }
+    try { await (this instanceof Message ? this.author : this.user).send({ content: this.url, embeds: [embed] }); }
     catch (err) {
       if (err.code != CANNOT_SEND_MESSAGE_API_ERR) throw err;
     }
@@ -137,8 +137,11 @@ module.exports = async function checkForErrors(command, lang) {
     return true;
   }
 
-  // DO NOT REMOVE THE FOLLOWING LINE
-  if (this.client.config.devOnlyFolders.includes(command.category) && !this.client.config.devIds.has(this.user.id)) return true;
+  // DO NOT REMOVE THE FOLLOWING IF STATEMENT
+  if (
+    this.client.config.devOnlyFolders.includes(command.category) &&
+    !this.client.config.devIds.has((this instanceof Message ? this.author : this.user).id)
+  ) return true;
   if (this instanceof Message && this.guild?.members.me.communicationDisabledUntil) return true;
   if (command.disabled) return this.client.config.replyOnDisabledCommand ? ['disabled', command.disabledReason ?? 'Not provided'] : true;
 
@@ -148,7 +151,7 @@ module.exports = async function checkForErrors(command, lang) {
   const disabledList = this.guild?.db.config.commands?.[command.aliasOf ?? command.name]?.disabled;
   if (disabledList && this.member && this.member.id != this.guild.ownerId) {
     if (Object.values(disabledList).some(e => Array.isArray(e) && e.includes('*'))) return ['notAllowed.anyone'];
-    if (disabledList.users?.includes(this.user.id)) return ['notAllowed.user'];
+    if (disabledList.users?.includes((this instanceof Message ? this.author : this.user).id)) return ['notAllowed.user'];
     if (disabledList.channels?.includes(this.channel.id)) return ['notAllowed.channel'];
     if (
       disabledList.roles && ('cache' in this.member.roles ? this.member.roles.cache : this.member.roles)
