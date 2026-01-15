@@ -3,8 +3,7 @@ import type {
   BaseInteraction, ChatInputCommandInteraction, Message
 } from 'discord.js';
 import type { I18nProvider, Locale } from '@mephisto5558/i18n';
-import type { Command, CommandOption, CommandType } from '..';
-import type { Database } from '../types/database';
+import type { Command, CommandType } from '..';
 
 export { default as constants } from './constants';
 
@@ -25,7 +24,7 @@ export declare function checkForErrors(
 export declare function commandExecutionWrapper(
   this: BaseInteraction | Message,
   command: Command<CommandType[], boolean> | undefined,
-  commandType: Exclude<keyof Database['botSettings']['cmdStats'][string], 'createdAt'>,
+  commandType: string,
   lang: lang
 ): Promise<Message | undefined>;
 

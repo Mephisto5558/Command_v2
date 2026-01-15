@@ -1,9 +1,29 @@
-/** @import { commandExecutionWrapper as commandExecutionWrapperT } from './index.js' */
+/**
+ * @import { Client } from 'discord.js'
+ * @import { Translator } from '@mephisto5558/i18n'
+ * @import { commandExecutionWrapper as commandExecutionWrapperT } from './index.js' */
 
 const
   { ChatInputCommandInteraction, Colors, EmbedBuilder, MessageFlags } = require('discord.js'),
-  checkForErrors = require('./checkForErrors'),
-  errorHandler = require('./errorHandler');
+  checkForErrors = require('./checkForErrors');
+
+class CommandExecutionError extends Error {
+  name = 'CommandExecutionError';
+
+  /**
+   * @param {string | undefined} message
+   * @param {Client} client
+   * @param {ThisParameterType<commandExecutionWrapperT>} interaction
+   * @param {Translator} lang
+   * @param {ErrorOptions | undefined} options */
+  constructor(message, client, interaction, lang, options) {
+    super(message, options);
+
+    this.client = client;
+    this.interaction = interaction;
+    this.lang = lang;
+  }
+}
 
 /** @type {commandExecutionWrapperT} */
 module.exports = async function commandExecutionWrapper(command, commandType, lang) {
@@ -45,5 +65,5 @@ module.exports = async function commandExecutionWrapper(command, commandType, la
         await this.guild.updateDB(`cmdStats.${commandName}.${commandType}`, (this.guild.db.cmdStats?.[commandName]?.[commandType] ?? 0) + 1);
     }
   }
-  catch (err) { return errorHandler.call(this.client, err, this, lang); }
+  catch (err) { throw new CommandExecutionError(err.message, this.client, this, lang, { cause: err }); }
 };
