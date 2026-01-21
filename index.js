@@ -4,7 +4,7 @@
 
 
 const
-  { ApplicationCommandType, PermissionsBitField, ApplicationCommandOptionType } = require('discord.js'),
+  { ApplicationCommandType, PermissionsBitField, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js'),
   { basename, dirname } = require('node:path'),
   { filename, constants: { descriptionMaxLength, choicesMaxAmt, choiceValueMaxLength, choiceValueMinLength } } = require('./utils');
 
@@ -256,8 +256,8 @@ class Command {
     }
 
     if (config.aliases) {
-      if (config.aliases.slash) this.aliases.slash = config.aliases.slash;
-      if (config.aliases.prefix) this.aliases.prefix = config.aliases.prefix;
+      for (const commandType of Object.values(commandTypes))
+        if (config.aliases[commandType]?.length) this.aliases[commandType] = config.aliases[commandType];
     }
 
     if (config.cooldowns) {

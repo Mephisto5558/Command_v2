@@ -1,5 +1,7 @@
 /** @import { getCommands as getCommandsT } from '.' */
 
+import { commandTypes } from '..';
+
 /** @typedef {{ commandName: string, commandUsage: string, commandDescription: string, commandAlias: string }[]} commandList */
 
 /** @type {getCommandsT} */
@@ -29,8 +31,8 @@ module.exports = function getCommands(lang) {
       commandDescription: lang(`commands.${cmd.category}.${cmd.name}.description`) ?? cmd.description,
       commandAlias: (
         /* eslint-disable-next-line sonarjs/expression-complexity -- will be fixed when commands are moved to their own lib */
-        (cmd.aliases && 'prefix' in cmd.aliases && cmd.aliases.prefix.length ? `Prefix: ${cmd.aliases.prefix.join(', ')}\n` : '')
-        + (cmd.aliases && 'slash' in cmd.aliases && cmd.aliases.slash.length ? `Slash: ${cmd.aliases.slash.join(', ')}` : '') || lang('global.none')
+        (cmd.aliases && commandTypes.prefix in cmd.aliases && cmd.aliases[commandTypes.prefix].length ? `Prefix: ${cmd.aliases[commandTypes.prefix].join(', ')}\n` : '')
+        + (cmd.aliases && commandTypes.slash in cmd.aliases && cmd.aliases[commandTypes.slash].length ? `Slash: ${cmd.aliases[commandTypes.slash].join(', ')}` : '') || lang('global.none')
       ).trim().replaceAll('\n', '<br>&nbsp')
     });
 

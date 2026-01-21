@@ -9,6 +9,7 @@ import type { I18nProvider, Locale, Translator } from '@mephisto5558/i18n';
 
 export * from './utils/index.js';
 export * as loaders from './loaders';
+export { PermissionFlagsBits as Permissions } from 'discord.js';
 
 type ResolveContext<MAP, KEYS extends (keyof MAP)[]> = MAP[KEYS[number]];
 
@@ -26,7 +27,7 @@ export interface CommandConfig<CT extends readonly CommandType[], DM extends boo
   usage?: { usage?: string; examples?: string } & {};
   aliases?: { [K in NoInfer<CT>[number]]?: string[] } & {};
   cooldowns?: { guild?: number; channel?: number; user?: number } & {};
-  permissions?: { client?: PermissionFlags[]; user?: PermissionFlags[] } & {};
+  permissions?: { client?: PermissionFlags[keyof PermissionFlags][]; user?: PermissionFlags[keyof PermissionFlags][] } & {};
   dmPermission?: DM;
 
   disabled?: boolean;
@@ -97,7 +98,7 @@ export declare class Command<
   aliases: { [K in NoInfer<commandTypes>[number]]: string[] } & {};
   cooldowns: { [K in 'guild' | 'channel' | 'user']: number } & {};
 
-  permissions: { [K in 'client' | 'user']: PermissionFlags[] } & {};
+  permissions: { [K in 'client' | 'user']: PermissionFlags[keyof PermissionFlags][] } & {};
   get defaultMemberPermissions(): PermissionsBitField;
 
   dmPermission: runsInDM;
