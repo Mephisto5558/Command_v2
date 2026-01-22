@@ -8,11 +8,9 @@
 const
   { ApplicationCommandOptionType, ApplicationCommandType, PermissionsBitField } = require('discord.js'),
   { basename, dirname } = require('node:path'),
-  { filename, loadFile, constants: { descriptionMaxLength, choicesMaxAmt, choiceValueMaxLength, choiceValueMinLength } } = require('./utils'),
-
-  /* eslint-disable-next-line jsdoc/no-undefined-types -- false positive */
-  /** @type {<T extends string>(str: T) => Capitalize<T>} */
-  capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+  {
+    filename, loadFile, capitalize, constants: { descriptionMaxLength, choicesMaxAmt, choiceValueMaxLength, choiceValueMinLength }
+  } = require('./utils');
 
 /**
  * @param {unknown} a

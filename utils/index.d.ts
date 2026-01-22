@@ -13,6 +13,8 @@ export declare function autocompleteGenerator(
   target: AutocompleteFocusedOption, i18n: I18nProvider, locale: Locale
 ): Promise<{ name: string | number; value: string | number }[] | undefined>;
 
+export declare function capitalize<T extends string>(str: T): Capitalize<T>;
+
 /**
  * @returns The error key and replacement values for `lang()` or `false` if no error.
  * Returns `true` if error happend but has been handled internally. */
