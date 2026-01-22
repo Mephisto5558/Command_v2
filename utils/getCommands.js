@@ -1,13 +1,15 @@
-/** @import { getCommands as getCommandsT } from '.' */
+/**
+ * @import { Command, CommandType } from '..'
+ * @import { getCommands as getCommandsT } from '.' */
 
-import { commandTypes } from '..';
+const { capitalize, commandTypes } = require('..');
 
 /** @typedef {{ commandName: string, commandUsage: string, commandDescription: string, commandAlias: string }[]} commandList */
 
 /** @type {getCommandsT} */
 module.exports = function getCommands(lang) {
   const commandList = [...this.slashCommands.values(), ...this.prefixCommands.values()].unique().reduce((
-    /** @type {{ category: string, subTitle: '', aliasesDisabled: boolean, list: commandList }[]} */ acc, cmd
+    /** @type {{ category: string, subTitle: '', aliasesDisabled: boolean, list: commandList }[]} */ acc, /** @type {Command<CommandType[]>} */ cmd
   ) => {
     if (this.config.devOnlyFolders.includes(cmd.category) || cmd.disabled || cmd.aliasOf) return acc;
 
@@ -26,13 +28,13 @@ module.exports = function getCommands(lang) {
       commandUsage: (
         /* eslint-disable-next-line @typescript-eslint/restrict-plus-operands -- will be fixed when commands are moved to their own lib */
         (cmd.types.includes(commandTypes.slash) ? lang('others.getCommands.lookAtOptionDesc') : '')
-        + (lang(`commands.${cmd.category}.${cmd.name}.usage.usage`)?.replaceAll(/slash command:/gi, '') ?? '') || lang('others.getCommands.noInfo')
+        + (lang(`${cmd.id}.usage.usage`)?.replaceAll(/slash command:/gi, '') ?? '') || lang('others.getCommands.noInfo')
       ).trim().replaceAll('\n', '<br>&nbsp'),
-      commandDescription: lang(`commands.${cmd.category}.${cmd.name}.description`) ?? cmd.description,
+      commandDescription: cmd.descriptionLocalizations[lang.config.locale ?? lang.defaultConfig.defaultLocale] ?? cmd.description,
       commandAlias: (
-        /* eslint-disable-next-line sonarjs/expression-complexity -- will be fixed when commands are moved to their own lib */
-        (cmd.aliases && commandTypes.prefix in cmd.aliases && cmd.aliases[commandTypes.prefix].length ? `Prefix: ${cmd.aliases[commandTypes.prefix].join(', ')}\n` : '')
-        + (cmd.aliases && commandTypes.slash in cmd.aliases && cmd.aliases[commandTypes.slash].length ? `Slash: ${cmd.aliases[commandTypes.slash].join(', ')}` : '') || lang('global.none')
+        (cmd.aliases[commandTypes.prefix].length ? `${capitalize(commandTypes.prefix)}: ${cmd.aliases[commandTypes.prefix].join(', ')}\n` : '')
+        + (cmd.aliases[commandTypes.slash].length ? `${capitalize(commandTypes.slash)}: ${cmd.aliases[commandTypes.slash].join(', ')}` : '')
+        || lang('global.none')
       ).trim().replaceAll('\n', '<br>&nbsp')
     });
 
