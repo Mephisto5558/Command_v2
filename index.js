@@ -468,15 +468,17 @@ class Command {
   isEqualTo(cmd) {
     if (!cmd) return false;
     if (
+      /* eslint-disable-next-line sonarjs/expression-complexity */
       this.name != cmd.name || this.description != cmd.description || this.type != cmd.type
+      /* eslint-disable-next-line @typescript-eslint/no-deprecated */
       || this.dmPermission != cmd.dmPermission
-      || this.defaultMemberPermissions?.bitfield != cmd.defaultMemberPermissions?.bitfield
+      || this.defaultMemberPermissions.bitfield != cmd.defaultMemberPermissions?.bitfield
       || !equal(this.nameLocalizations, cmd.nameLocalizations)
       || !equal(this.descriptionLocalizations, cmd.descriptionLocalizations)
     ) return false;
 
-    if ((this.options?.length ?? 0) != (cmd.options?.length ?? 0)) return false;
-    if (this.options?.length) {
+    if (this.options.length != cmd.options.length) return false;
+    if (this.options.length) {
       for (const option of this.options) {
         const other = cmd.options.find(e => e.name == option.name);
         if (!other || !option.isEqualTo(other)) return false;
