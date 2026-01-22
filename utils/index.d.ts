@@ -59,6 +59,10 @@ export declare function getDirectories(
   path: string
 ): Promise<string>;
 
+export declare function loadFile(
+  path: string
+): Promise<unknown>;
+
 export declare function permissionTranslator<T extends string | string[] | undefined>(
   perms?: T, locale?: Locale, i18n: I18nProvider
 ): T extends undefined ? [] : T extends string ? string : string[];

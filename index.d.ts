@@ -2,7 +2,7 @@
 
 import type {
   ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionType, ApplicationCommandType, AutocompleteInteraction,
-  ChannelType, PermissionFlags, PermissionsBitField, _NonNullableFields
+  ChannelType, ClientApplication, PermissionFlags, PermissionsBitField, _NonNullableFields
 } from 'discord.js';
 import type * as __ from '@mephisto5558/better-types'; /* eslint-disable-line import-x/no-namespace -- load in global definitions */
 import type { I18nProvider, Locale, Translator } from '@mephisto5558/i18n';
@@ -78,8 +78,7 @@ export declare class Command<
 > {
   name: Lowercase<string>;
   id: `commands.${Command['category']}.${Command['name']}`;
-
-  aliasOf: Command | undefined;
+  commandId: ['slash'] extends NoInfer<commandTypes> ? Snowflake : undefined;
 
   /** Currently not used */
   nameLocalizations?: Record<Locale, Lowercase<string>>;
@@ -129,7 +128,17 @@ export declare class Command<
     error: typeof console.error;
   }): this;
 
-  isEqualTo(cmd: Command<CommandType[] | ApplicationCommand, boolean>): boolean;
+  reload(
+    application: ResolveContext<{
+      slash: ClientApplication;
+      prefix: ClientApplication | undefined;
+    }, NoInfer<commandTypes>>,
+    i18n?: I18nProvider
+  ): Promise<Command<CommandType[], boolean>>;
+
+  reloadApplicationCommand(application: ClientApplication, newCommand: Command<CommandType[], boolean>): Promise<ApplicationCommand | undefined>;
+
+  isEqualTo(cmd?: Command<CommandType[], boolean> | ApplicationCommand): boolean;
 }
 
 export declare class CommandOption<

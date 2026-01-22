@@ -31,13 +31,14 @@
   },
   "dependencies": {
     "@mephisto5558/i18n": "2.x",
-    "discord.js": "14.x"
+    "discord.js": "14.x",
+    "import-without-cache": "^0.2.5"
   },
   "devDependencies": {
     "@mephisto5558/better-types": "latest",
     "@mephisto5558/eslint-config": "latest"
   },
   "engines": {
-    "node": ">=20.11.0"
+    "node": ">=22.15.0"
   }
 }

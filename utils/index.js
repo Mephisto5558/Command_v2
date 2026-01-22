@@ -8,6 +8,7 @@ const utils = {
   filename: require('./filename'),
   getCommands: require('./getCommands'),
   getDirectories: require('./getDirectories'),
+  loadFile: require('./loadFile'),
   permissionTranslator: require('./permissionTranslator')
 
   /* componentHandler: require('./componentHandler'),
