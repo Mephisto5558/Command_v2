@@ -1,5 +1,5 @@
 /**
- * @import { Command } from '..'
+ * @import { Command, commandDoneFn } from '..'
  * @import { Client } from 'discord.js' */
 
 
@@ -13,8 +13,10 @@ let
   enabledCommandCount = 0,
   disabledCommandCount = 0;
 
-/** @this {Client<false>} */
-module.exports = async function commandLoader() {
+/**
+ * @this {Client<false>}
+ * @param {commandDoneFn} doneFn */
+module.exports = async function commandLoader(doneFn) {
   for (const subFolder of await getDirectories('./Commands')) {
     for (const file of await readdir(`./Commands/${subFolder}`, { withFileTypes: true })) {
       if (!file.name.endsWith('.js') && !file.isDirectory()) continue;
@@ -30,7 +32,7 @@ module.exports = async function commandLoader() {
 
       if (!commandFile?.types.includes(commandTypes.prefix)) continue;
 
-      const command = commandFile.init(this.i18n, filePath, log);
+      const command = commandFile.init(this.i18n, filePath, log, doneFn);
 
       this.prefixCommands.set(command.name, command);
       if (command.disabled) {

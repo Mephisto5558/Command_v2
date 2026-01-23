@@ -2,7 +2,7 @@
 
 import type {
   ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionType, ApplicationCommandType, AutocompleteInteraction,
-  ChannelType, ClientApplication, PermissionFlags, PermissionsBitField, _NonNullableFields
+  ChannelType, ChatInputCommandInteraction, Client, ClientApplication, Message, PermissionFlags, PermissionsBitField, _NonNullableFields
 } from 'discord.js';
 import type * as __ from '@mephisto5558/better-types'; /* eslint-disable-line import-x/no-namespace -- load in global definitions */
 import type { I18nProvider, Locale, Translator } from '@mephisto5558/i18n';
@@ -15,6 +15,11 @@ type ResolveContext<MAP, KEYS extends (keyof MAP)[]> = MAP[KEYS[number]];
 
 type autocompleteOptions = string | number | { name: string; value: string };
 export type CommandType = 'slash' | 'prefix';
+
+export type commandDoneFn<cmd extends Command = Command<CommandType[], boolean>> = (
+  this: ThisParameterType<cmd['run']>,
+  command: cmd, lang: Translator
+) => Promise<never>;
 
 export declare const commandTypes: { readonly [K in CommandType]: K };
 
@@ -72,6 +77,18 @@ export interface CommandOptionConfig<CT extends readonly CommandType[], DM exten
   run?: StrictCommandOption<CT, DM, AO>['run'];
 }
 
+export declare class CommandExecutionError extends Error {
+  name: 'CommandExecutionError';
+
+  interaction: ThisParameterType<Command<CommandType[], boolean>['run']>;
+  translator: Translator<boolean, Locale>;
+
+  constructor(
+    message: CommandExecutionError['message'], interaction: CommandExecutionError['interaction'],
+    translator: CommandExecutionError['translator'], options?: ErrorOptions
+  );
+}
+
 export declare class Command<
   const commandTypes extends readonly CommandType[] = [],
   const runsInDM extends boolean = false
@@ -114,7 +131,7 @@ export declare class Command<
 
   run: (
     this: ResolveContext<{
-      slash: Interaction<runsInDM extends false ? true : false>;
+      slash: ChatInputCommandInteraction<runsInDM extends false ? true : false>;
       prefix: Message<runsInDM extends false ? true : false>;
     }, NoInfer<commandTypes>>,
     lang: Translator, client: Client
@@ -126,7 +143,10 @@ export declare class Command<
     log: typeof console.log;
     warn: typeof console.warn;
     error: typeof console.error;
-  }): this;
+    debug: typeof console.debug;
+  }, doneFn?: commandDoneFn<StrictCommand<commandTypes, runsInDM>>): this;
+
+  async runWrapper(Interaction: ThisParameterType<StrictCommand<commandTypes, runsInDM>['run']>, i18n: I18nProvider, locale: Locale): Promise<never>;
 
   reload(
     application: ResolveContext<{

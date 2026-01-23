@@ -1,15 +1,18 @@
 /* eslint-disable max-lines */
 
 /**
- * @import { I18nProvider } from '@mephisto5558/i18n'
- * @import { Command as CommandT, CommandOption as CommandOptionT, CommandType, CommandConfig, CommandOptionConfig } from '.' */
+ * @import { I18nProvider, Locale } from '@mephisto5558/i18n'
+ * @import { Command as CommandT, CommandOption as CommandOptionT, CommandType, CommandConfig, CommandOptionConfig, CommandExecutionError as CommandExecutionErrorT } from '.' */
 
 
 const
-  { ApplicationCommandOptionType, ApplicationCommandType, PermissionsBitField } = require('discord.js'),
+  {
+    ApplicationCommandOptionType, ApplicationCommandType, ChannelType,
+    Colors, CommandInteraction, EmbedBuilder, Message, MessageFlags, PermissionsBitField, Role, inlineCode
+  } = require('discord.js'),
   { basename, dirname } = require('node:path'),
   {
-    filename, loadFile, capitalize, constants: { descriptionMaxLength, choicesMaxAmt, choiceValueMaxLength, choiceValueMinLength }
+    filename, loadFile, capitalize, constants: { descriptionMaxLength, choicesMaxAmt, choiceValueMaxLength, choiceValueMinLength }, cooldowns
   } = require('./utils');
 
 /**
@@ -39,6 +42,23 @@ const commandTypes = Object.freeze({
   slash: 'slash',
   prefix: 'prefix'
 });
+
+
+class CommandExecutionError extends Error {
+  name = 'CommandExecutionError';
+
+  /**
+   * @param {string | undefined} message
+   * @param {CommandExecutionErrorT['interaction']} interaction
+   * @param {CommandExecutionErrorT['translator']} translator
+   * @param {ErrorOptions | undefined} options */
+  constructor(message, interaction, translator, options) {
+    super(message, options);
+
+    this.interaction = interaction;
+    this.translator = translator;
+  }
+}
 
 class CommandOption {
   name;
@@ -118,9 +138,7 @@ class CommandOption {
       throw new Error(`String options do not support "minValue" and "maxValue" (${this.id})`);
   }
 
-  /**
-   * @param {I18nProvider} i18n
-   * @throws {Error} on not auto-fixable issues */
+  /** @param {I18nProvider} i18n */
   #localize(i18n) {
     for (const [locale] of i18n.availableLocales) {
       const
@@ -140,36 +158,49 @@ class CommandOption {
 
 
       // choices
-      if ('choices' in this) {
-        if (this.choices.length > choicesMaxAmt)
-          throw new Error(`Too many choices (${this.choices.length}) found for option "${this.name}"). Max is ${choicesMaxAmt}.`);
+      if ('choices' in this) this.#localizeChoices(i18n, locale);
+    }
+  }
 
-        /** @type {NonNullable<CommandOptionT['choices']>[number]} */
-        let choice;
-        for (choice of this.choices) {
-          choice.nameLocalizations ??= {};
+  /**
+   * @param {I18nProvider} i18n
+   * @param {Locale} locale
+   * @throws {Error} on too many choices */
+  #localizeChoices(i18n, locale) {
+    if (this.choices.length > choicesMaxAmt) {
+      throw new Error(
+        `Too many choices (${this.choices.length}) found for option "${this.name}"). Max is ${choicesMaxAmt}.`
+        + 'Use autocompleteOptions with strictAutocomplete instead.'
+      );
+    }
 
-          const localizedChoice = optionalTranslator(`choices.${choice.value}`) ?? choice.value.toString();
-          if (localizedChoice) {
-            const errMsg = `"${locale}" choice name localization for "${choice.value}" of option "${this.name}"`
-              + `(${this.id}.choices.${choice.value}) is too`;
+    const optionalTranslator = i18n.getTranslator({ locale, undefinedNotFound: true, backupPaths: [this.id] });
 
-            if (localizedChoice.length < choiceValueMinLength) {
-              this.#logger.warn(`${errMsg} short (min length is ${choiceValueMinLength})! Skipping this localization.`);
-              continue;
-            }
-            else if (localizedChoice.length > choiceValueMaxLength)
-              this.#logger.warn(`${errMsg} long (max length is ${choiceValueMaxLength})! Slicing.`);
 
-            if (locale == i18n.config.defaultLocale) choice.name = localizedChoice;
-            else choice.nameLocalizations[locale] = localizedChoice;
-          }
-          else if (choice.name != choice.value && !this.disabled) {
-            this.#logger.warn(
-              `Missing "${locale}" choice name localization for "${choice.value}" in option "${this.name}" (${this.id}.choices.${choice.value})`
-            );
-          }
+    /** @type {NonNullable<CommandOptionT['choices']>[number]} */
+    let choice;
+    for (choice of this.choices) {
+      choice.nameLocalizations ??= {};
+
+      const localizedChoice = optionalTranslator(`choices.${choice.value}`) ?? choice.value.toString();
+      if (localizedChoice) {
+        const errMsg = `"${locale}" choice name localization for "${choice.value}" of option "${this.name}"`
+          + `(${this.id}.choices.${choice.value}) is too`;
+
+        if (localizedChoice.length < choiceValueMinLength) {
+          this.#logger.warn(`${errMsg} short (min length is ${choiceValueMinLength})! Skipping this localization.`);
+          continue;
         }
+        else if (localizedChoice.length > choiceValueMaxLength)
+          this.#logger.warn(`${errMsg} long (max length is ${choiceValueMaxLength})! Slicing.`);
+
+        if (locale == i18n.config.defaultLocale) choice.name = localizedChoice;
+        else choice.nameLocalizations[locale] = localizedChoice;
+      }
+      else if (choice.name != choice.value && !this.disabled) {
+        this.#logger.warn(
+          `Missing "${locale}" choice name localization for "${choice.value}" in option "${this.name}" (${this.id}.choices.${choice.value})`
+        );
       }
     }
   }
@@ -200,7 +231,7 @@ class CommandOption {
     return true;
   }
 
-  /** @param {NonNullable<CommandOptionT['choices']>} choices */
+  /** @param {CommandOptionT['choices']} choices */
   #choicesEqualTo(choices) {
     if ((this.choices?.length ?? 0) != (choices?.length ?? 0)) return false;
     if (this.choices?.length) {
@@ -212,7 +243,7 @@ class CommandOption {
     return true;
   }
 
-  /** @param {NonNullable<CommandOptionT['channelTypes']>} channelTypes */
+  /** @param {CommandOptionT['channelTypes']} channelTypes */
   #channelTypesEqualTo(channelTypes) {
     if ((this.channelTypes?.length ?? 0) != (channelTypes?.length ?? 0)) return false;
     if (this.channelTypes?.length) {
@@ -238,7 +269,7 @@ class Command {
   descriptionLocalizations = {};
 
   /** @type {string} */ id;
-  types = [];
+  /** @type {CommandT<CommandType[], boolean>['types']} */ types = [];
   type = ApplicationCommandType.ChatInput;
 
   /** @type {CommandT['usage']} */ usage = { usage: undefined, examples: undefined };
@@ -264,8 +295,9 @@ class Command {
 
   /** @type {string} */ #filePath;
 
-  /** @type {Parameters<CommandT['init']>[0]} */ #i18n;
-  /** @type {Parameters<CommandT['init']>['2']} */ #logger;
+  /** @type {Parameters<CommandT<CommandType[], boolean>['init']>[0]} */ #i18n;
+  /** @type {Parameters<CommandT<CommandType[], boolean>['init']>['2']} */ #logger;
+  /** @type {Parameters<CommandT<CommandType[], boolean>['init']>['3']} */ #doneFn;
 
   /** @param {CommandConfig<CommandType[], boolean>} config */
   constructor(config) {
@@ -305,12 +337,14 @@ class Command {
     this.run = config.run;
   }
 
-  /** @type {CommandT['init']} */
-  init(i18n, filePath, logger = console) {
+  /** @type {CommandT<CommandType[], boolean>['init']} */
+  /* eslint-disable-next-line @typescript-eslint/no-useless-default-assignment, unicorn/no-useless-undefined -- optional without default */
+  init(i18n, filePath, logger = console, doneFn = undefined) {
     this.#filePath = filePath;
 
     this.#i18n = i18n;
     this.#logger = logger;
+    this.#doneFn = doneFn;
 
     this.name = filename(this.#filePath).toLowerCase();
     this.category = basename(dirname(this.#filePath)).toLowerCase();
@@ -360,6 +394,80 @@ class Command {
       if (locale == this.#i18n.config.defaultLocale) this.usage = localizedUsage;
       else this.usageLocalizations[locale] = localizedUsage;
     }
+  }
+
+  /** @type {CommandT<CommandType[], boolean>['runWrapper']} */
+  async runWrapper(interaction, i18n, locale) {
+    const
+      wrapperTranslator = i18n.getTranslator({ locale, backupPaths: ['events.command'] }),
+      commandTranslator = i18n.getTranslator({ locale, backupPaths: [this.id] }),
+      commandType = interaction instanceof CommandInteraction ? commandTypes.slash : commandTypes.prefix,
+
+      errorKey = await this.#isRunnable(wrapperTranslator);
+
+    if (errorKey !== false) {
+      if (errorKey === true) return; // already handled by the function
+      return interaction.reply({
+        embeds: [new EmbedBuilder({ description: wrapperTranslator(...errorKey), color: Colors.Red })],
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    interaction.commandName ??= this.name; // Is undefined on `MessageComponentInteraction`s
+
+    this.#logger.debug(`Executing ${commandType} command ${this.name}`);
+
+    if (commandType == commandTypes.slash && interaction instanceof CommandInteraction && !this.noDefer && !this.replied)
+      await interaction.deferReply({ flags: this.ephemeralDefer ? MessageFlags.Ephemeral : undefined });
+
+    try {
+      await this.run.call(interaction, commandTranslator, interaction.client);
+      await this.#doneFn.call(interaction, this, commandTranslator);
+    }
+    catch (err) { throw new CommandExecutionError(err.message, interaction, wrapperTranslator, { cause: err }); }
+  }
+
+  /**
+   * @param {ThisParameterType<CommandT<CommandType[], boolean>['run']>} interaction
+   * @returns {Promise<[string, Record<string, string> | string | undefined] | boolean>} */
+  async #isRunnable(interaction) {
+    if (interaction.client.config.devOnlyCategories.includes(this.category) && !interaction.client.config.devIds.has(interaction.author.id)) return true;
+
+    if (interaction.client.botType == 'dev' && !this.beta) return interaction.client.config.replyOnNonBetaCommand ? ['nonBeta'] : true;
+    if (this.disabled) return interaction.client.config.replyOnDisabledCommand ? ['disabled', this.disabledReason ?? 'Not provided'] : true;
+
+    if (interaction instanceof Message) {
+      if (!this.types.includes('prefix')) return ['slashOnly', this.mention];
+      if (interaction.guild?.members.me.communicationDisabledUntil) return true;
+    }
+
+    if (!this.dmPermission && interaction.channel.type == ChannelType.DM) return ['guildOnly'];
+
+
+    const disabledList = interaction.guild?.db.config.commands?.[(this.aliasOf ?? this).name]?.disabled;
+    if (disabledList && interaction.member && interaction.member.id != interaction.guild.ownerId) {
+      if (Object.values(disabledList).some(e => Array.isArray(e) && e.includes('*'))) return ['notAllowed.anyone'];
+      if (disabledList.users?.includes(interaction.author.id)) return ['notAllowed.user'];
+      if (disabledList.channels?.includes(interaction.channel.id)) return ['notAllowed.channel'];
+      if (
+        disabledList.roles && ('cache' in interaction.member.roles ? interaction.member.roles.cache : interaction.member.roles)
+          .some(e => disabledList.roles.includes(e instanceof Role ? e.id : e))
+      ) return ['notAllowed.role'];
+    }
+
+    if (this.category == 'nsfw' && !interaction.channel.nsfw) return ['nsfw'];
+
+    if (this.options.length) {
+      const err = await checkOptions.call(interaction, this, wrapperTranslator);
+      if (err) return err;
+    }
+
+    if (interaction.client.botType != 'dev') {
+      const cooldown = cooldowns.call(interaction, (this.aliasOf ?? this).name, this.cooldowns);
+      if (cooldown) return ['cooldown', inlineCode(cooldown)];
+    }
+
+    return interaction.inGuild() && (interaction instanceof Message || interaction instanceof CommandInteraction) && await checkPerms.call(interaction, this, lang);
   }
 
   /**
@@ -490,6 +598,7 @@ module.exports = {
   Command,
   CommandOption,
   commandTypes,
+  CommandExecutionError,
   ...require('./utils'),
   loaders: require('./loaders')
 };

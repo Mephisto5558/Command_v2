@@ -23,13 +23,6 @@ export declare function checkForErrors(
   command: Command<CommandType[], boolean> | undefined, lang: lang
 ): Promise<[string, Record<string, string> | string | undefined] | boolean>;
 
-export declare function commandExecutionWrapper(
-  this: BaseInteraction | Message,
-  command: Command<CommandType[], boolean> | undefined,
-  commandType: string,
-  lang: lang
-): Promise<Message | undefined>;
-
 /** Formats an application command name and id into a command mention. */
 export declare function commandMention<CommandName extends string, CommandId extends Snowflake>(
   name: CommandName, id: CommandId
