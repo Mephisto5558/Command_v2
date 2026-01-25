@@ -5,7 +5,6 @@
 
 const
   { ChannelType, Colors, CommandInteraction, EmbedBuilder, Message, MessageFlags, PermissionFlagsBits, Role, inlineCode } = require('discord.js'),
-  autocompleteGenerator = require('./autocompleteGenerator'),
   commandMention = require('./commandMention'),
   cooldowns = require('./cooldowns'),
   permissionTranslator = require('./permissionTranslator'),
@@ -56,12 +55,10 @@ async function checkOptions(command, lang) {
 
     const autocompleteIsUsed = () => !!(autocomplete && strictAutocomplete && (this.options?.get(name) ?? this.args?.[i]));
     if (
-      isValidType(this) && autocompleteIsUsed() && !(await autocompleteGenerator.call(
-        /* eslint-disable @typescript-eslint/no-unsafe-assignment,
-        @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- false positive/ts bug */
-        this, command, { name, value: this.options?.get(name).value ?? this.args?.[i] ?? '' }, this.client.i18n, this.guild?.db.config.lang ?? this.guild?.localeCode
-      )).some(e => (e.toLowerCase?.() ?? e.value.toLowerCase()) === (this.options?.get(name).value ?? this.args?.[i])?.toLowerCase())
-
+      isValidType(this) && autocompleteIsUsed() && !(await data.generateAutocomplete(
+        /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- false positive/ts bug */
+        this, this.options?.get(name).value ?? this.args?.[i] ?? '', lang.config.locale ?? lang.defaultConfig.defaultLocale
+      )).some(e => e.value.toString().toLowerCase() === (this.options?.get(name).value ?? this.args?.[i])?.toLowerCase())
     /* eslint-enable */
     ) {
       if (typeof autocompleteOptions != 'function') {

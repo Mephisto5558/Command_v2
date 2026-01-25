@@ -1,17 +1,8 @@
-import type {
-  AutocompleteFocusedOption, AutocompleteInteraction,
-  BaseInteraction, ChatInputCommandInteraction, Message
-} from 'discord.js';
+import type { BaseInteraction, Message } from 'discord.js';
 import type { I18nProvider, Locale } from '@mephisto5558/i18n';
 import type { Command, CommandType } from '..';
 
 export { default as constants } from './constants';
-
-export declare function autocompleteGenerator(
-  this: AutocompleteInteraction | ChatInputCommandInteraction | Message,
-  command: Command<CommandType[], boolean>,
-  target: AutocompleteFocusedOption, i18n: I18nProvider, locale: Locale
-): Promise<{ name: string | number; value: string | number }[] | undefined>;
 
 export declare function capitalize<T extends string>(str: T): Capitalize<T>;
 

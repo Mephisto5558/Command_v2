@@ -1,5 +1,4 @@
 const utils = {
-  autocompleteGenerator: require('./autocompleteGenerator'),
   capitalize: require('./capitalize'),
   checkForErrors: require('./checkForErrors'),
   commandMention: require('./commandMention'),

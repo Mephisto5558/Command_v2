@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/consistent-indexed-object-style -- using index signature to improve readability for lib user */
 
 import type {
-  ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionType, ApplicationCommandType, AutocompleteInteraction,
-  ChannelType, ChatInputCommandInteraction, Client, ClientApplication, Message, PermissionFlags, PermissionsBitField, _NonNullableFields
+  ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType,
+  ApplicationCommandType, AutocompleteInteraction, ChannelType, ChatInputCommandInteraction, Client, ClientApplication,
+  CommandInteraction, Message, PermissionFlags, PermissionsBitField, _NonNullableFields
 } from 'discord.js';
 import type * as __ from '@mephisto5558/better-types'; /* eslint-disable-line import-x/no-namespace -- load in global definitions */
 import type { I18nProvider, Locale, Translator } from '@mephisto5558/i18n';
@@ -13,7 +14,8 @@ export { PermissionFlagsBits as Permissions } from 'discord.js';
 
 type ResolveContext<MAP, KEYS extends (keyof MAP)[]> = MAP[KEYS[number]];
 
-type autocompleteOptions = string | number | { name: string; value: string };
+type autocompleteObject = StrictOmit<ApplicationCommandOptionChoiceData, 'nameLocalizations'>;
+type autocompleteOptions = autocompleteObject['value'] | autocompleteObject;
 export type CommandType = 'slash' | 'prefix';
 
 export type commandDoneFn<cmd extends Command = Command<CommandType[], boolean>> = (
@@ -62,7 +64,7 @@ export interface CommandOptionConfig<CT extends readonly CommandType[], DM exten
   strictAutocomplete?: boolean;
   autocompleteOptions?: StrictCommandOption<CT, DM, AO>['autocompleteOptions'];
 
-  choices?: (string | number)[];
+  choices?: ApplicationCommandOptionChoiceData['value'][];
 
   channelTypes?: ChannelType[];
 
@@ -158,6 +160,11 @@ export declare class Command<
 
   reloadApplicationCommand(application: ClientApplication, newCommand: Command<CommandType[], boolean>): Promise<ApplicationCommand | undefined>;
 
+  findOption(
+    option: { name: string; type?: ApplicationCommandOptionType },
+    interaction?: ThisParameterType<StrictCommand<[typeof commandTypes.slash], runsInDM>['run']>
+  ): StrictCommandOption<commandTypes, runsInDM> | undefined;
+
   isEqualTo(cmd?: Command<CommandType[], boolean> | ApplicationCommand): boolean;
 }
 
@@ -189,14 +196,10 @@ export declare class CommandOption<
       (
         this: ResolveContext<{ slash: AutocompleteInteraction<'cached'>; prefix: Message }, NoInfer<commandTypes>>,
         query: string
-      ) => autocompleteOptions[] | Promise<autocompleteOptions>
+      ) => autocompleteOptions[] | Promise<autocompleteOptions[]>
     ) | undefined;
 
-  choices: {
-    name: string;
-    nameLocalizations?: Record<Locale, string>;
-    value: string | number;
-  }[] | undefined;
+  choices: ApplicationCommandOptionChoiceData[] | undefined;
 
   channelTypes: ChannelType[] | undefined;
 
@@ -220,5 +223,13 @@ export declare class CommandOption<
     warn: typeof console.warn;
     error: typeof console.error;
   }): this;
+
+  /** `translator` and `options` should not be supplied by an external caller. */
+  generateAutocomplete(
+    interaction: CommandInteraction | Message,
+    query: string, locale: Locale, translator?: Translator<true>,
+    options?: StrictCommandOption<commandTypes, runsInDM>['autocompleteOptions']
+  ): Promise<[] | autocompleteObject[]>;
+
   isEqualTo(opt: CommandOption<CommandType[], boolean> | ApplicationCommandOption): boolean;
 }

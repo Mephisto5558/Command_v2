@@ -12,7 +12,8 @@ const
   } = require('discord.js'),
   { basename, dirname } = require('node:path'),
   {
-    filename, loadFile, capitalize, constants: { descriptionMaxLength, choicesMaxAmt, choiceValueMaxLength, choiceValueMinLength }, cooldowns
+    filename, loadFile, capitalize,
+    constants: { autocompleteOptionsMaxAmt, descriptionMaxLength, choicesMaxAmt, choiceValueMaxLength, choiceValueMinLength }, cooldowns
   } = require('./utils');
 
 /**
@@ -203,6 +204,27 @@ class CommandOption {
         );
       }
     }
+  }
+
+  /** @type {CommandOptionT['generateAutocomplete']} */
+  async generateAutocomplete(interaction, query, locale, translator, options = this.autocompleteOptions) {
+    if (options == undefined) return [];
+
+    translator ??= this.#i18n.getTranslator({ locale, undefinedNotFound: true, backupPaths: [`${this.id}.choices`] });
+
+    if (typeof options == 'function') options = await options.call(interaction, query);
+    if (typeof options == 'string' || typeof options == 'number') return [{ name: translator(options) ?? options, value: options }];
+
+    if (Array.isArray(options)) {
+      return (await Promise.all(
+        options
+          .filter(e => !query || (typeof e == 'object' ? e.value : e).toString().toLowerCase().includes(query.toLowerCase()))
+          .slice(0, autocompleteOptionsMaxAmt)
+          .map(async e => this.generateAutocomplete(interaction, query, locale, translator, e))
+      )).flat();
+    }
+
+    return [options];
   }
 
   /* eslint-disable sonarjs/expression-complexity, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unnecessary-type-conversion,
@@ -568,6 +590,20 @@ class Command {
     }
 
     return appCommand;
+  }
+
+  /** @type {CommandT['findOption']} */
+  findOption({ name, type }, interaction) {
+    const
+      group = interaction?.options.getSubcommandGroup(false),
+      subcommand = interaction?.options.getSubcommand(false);
+
+    /* eslint-disable-next-line @typescript-eslint/no-this-alias -- this is required and fine in this context. */
+    let { options } = this;
+    if (group) ({ options } = options.find(e => e.name == group));
+    if (subcommand) ({ options } = options.find(e => e.name == subcommand));
+
+    return options.find(e => e.name == name && (!type || e.type == type));
   }
 
   /** @type {CommandT['isEqualTo']} */
