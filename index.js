@@ -1,8 +1,8 @@
 /* eslint-disable max-lines */
 
 /**
- * @import { I18nProvider, Locale } from '@mephisto5558/i18n'
- * @import { Command as CommandT, CommandOption as CommandOptionT, CommandType, CommandConfig, CommandOptionConfig, CommandExecutionError as CommandExecutionErrorT } from '.' */
+ * @import { Locale } from '@mephisto5558/i18n'
+ * @import { Command as CommandT, CommandOption as CommandOptionT, CommandType, CommandConfig, CommandOptionConfig, CommandExecutionError as CommandExecutionErrorT } from '.' */ /* eslint-disable-line @stylistic/max-len */
 
 
 const
@@ -78,6 +78,7 @@ class CommandOption {
   channelTypes;
   /** @type {CommandOptionT['options']} */ options = [];
 
+  /** @type {Parameters<CommandOptionT['init']>['0']} */ #i18n;
   /** @type {Parameters<CommandOptionT['init']>['2']} */ #logger;
 
   /** @param {CommandOptionConfig<CommandType[], boolean>} config */
@@ -109,12 +110,13 @@ class CommandOption {
 
   /** @type {CommandOptionT['init']} */
   init(i18n, parentId, logger = console) {
+    this.#i18n = i18n;
     this.#logger = logger;
 
     this.id = `${parentId}.options.${this.name}`;
 
     this.#validate();
-    this.#localize(i18n);
+    this.#localize();
 
     for (const option of this.options) option.init(i18n, this.id, logger);
 
@@ -138,35 +140,33 @@ class CommandOption {
       throw new Error(`String options do not support "minValue" and "maxValue" (${this.id})`);
   }
 
-  /** @param {I18nProvider} i18n */
-  #localize(i18n) {
-    for (const [locale] of i18n.availableLocales) {
+  #localize() {
+    for (const [locale] of this.#i18n.availableLocales) {
       const
-        requiredTranslator = i18n.getTranslator({ locale, errorNotFound: true, backupPaths: [this.id] }),
-        optionalTranslator = i18n.getTranslator({ locale, undefinedNotFound: true, backupPaths: [this.id] });
+        requiredTranslator = this.#i18n.getTranslator({ locale, errorNotFound: true, backupPaths: [this.id] }),
+        optionalTranslator = this.#i18n.getTranslator({ locale, undefinedNotFound: true, backupPaths: [this.id] });
 
       ; /* eslint-disable-line @stylistic/no-extra-semi -- formatting reasons */
 
       // description
-      const localizedDescription = locale == i18n.config.defaultLocale ? optionalTranslator('description') : requiredTranslator('description');
+      const localizedDescription = locale == this.#i18n.config.defaultLocale ? optionalTranslator('description') : requiredTranslator('description');
       if (localizedDescription?.length > descriptionMaxLength && !this.disabled)
         this.#logger.warn(`"${locale}" description for command "${this.name}" (${this.id}.description) is too long (max length is 100)! Slicing.`);
 
-      if (locale == i18n.config.defaultLocale) this.description = localizedDescription.slice(0, descriptionMaxLength);
+      if (locale == this.#i18n.config.defaultLocale) this.description = localizedDescription.slice(0, descriptionMaxLength);
       else if (localizedDescription) this.descriptionLocalizations[locale] = localizedDescription.slice(0, descriptionMaxLength);
       else if (!this.disabled) this.#logger.warn(`Missing "${locale}" description for command "${this.name}" (${this.id}.description)`);
 
 
       // choices
-      if ('choices' in this) this.#localizeChoices(i18n, locale);
+      if ('choices' in this) this.#localizeChoices(locale);
     }
   }
 
   /**
-   * @param {I18nProvider} i18n
    * @param {Locale} locale
    * @throws {Error} on too many choices */
-  #localizeChoices(i18n, locale) {
+  #localizeChoices(locale) {
     if (this.choices.length > choicesMaxAmt) {
       throw new Error(
         `Too many choices (${this.choices.length}) found for option "${this.name}"). Max is ${choicesMaxAmt}.`
@@ -174,7 +174,7 @@ class CommandOption {
       );
     }
 
-    const optionalTranslator = i18n.getTranslator({ locale, undefinedNotFound: true, backupPaths: [this.id] });
+    const optionalTranslator = this.#i18n.getTranslator({ locale, undefinedNotFound: true, backupPaths: [this.id] });
 
 
     /** @type {NonNullable<CommandOptionT['choices']>[number]} */
@@ -194,7 +194,7 @@ class CommandOption {
         else if (localizedChoice.length > choiceValueMaxLength)
           this.#logger.warn(`${errMsg} long (max length is ${choiceValueMaxLength})! Slicing.`);
 
-        if (locale == i18n.config.defaultLocale) choice.name = localizedChoice;
+        if (locale == this.#i18n.config.defaultLocale) choice.name = localizedChoice;
         else choice.nameLocalizations[locale] = localizedChoice;
       }
       else if (choice.name != choice.value && !this.disabled) {
