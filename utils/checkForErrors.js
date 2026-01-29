@@ -18,7 +18,7 @@ const
  * @this {ChatInputCommandInteraction | Message}
  * @param {Command<CommandType[], boolean> | CommandOption<CommandType[], boolean>} command
  * @param {lang} lang
- * @returns {Promise<[string, { option: string; description: string }] | [string, { option: string; availableOptions?: string }] | false>} */
+ * @returns {Promise<[string, { option: string, description: string }] | [string, { option: string, availableOptions?: string }] | false>} */
 async function checkOptions(command, lang) {
   let option = command;
   if (this.options?._group) {
@@ -136,8 +136,8 @@ module.exports = async function checkForErrors(command, lang) {
 
   // DO NOT REMOVE THE FOLLOWING IF STATEMENT
   if (
-    this.client.config.devOnlyFolders.includes(command.category) &&
-    !this.client.config.devIds.has((this instanceof Message ? this.author : this.user).id)
+    this.client.config.devOnlyFolders.includes(command.category)
+    && !this.client.config.devIds.has((this instanceof Message ? this.author : this.user).id)
   ) return true;
   if (this instanceof Message && this.guild?.members.me.communicationDisabledUntil) return true;
   if (command.disabled) return this.client.config.replyOnDisabledCommand ? ['disabled', command.disabledReason ?? 'Not provided'] : true;

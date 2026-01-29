@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/consistent-indexed-object-style -- using index signature to improve readability for lib user */
 
 import type {
-  ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionChoiceData, ApplicationCommandOptionType,
-  ApplicationCommandType, AutocompleteInteraction, ChannelType, ChatInputCommandInteraction, Client, ClientApplication,
-  CommandInteraction, Message, PermissionFlags, PermissionsBitField, _NonNullableFields
+  APIInteractionDataResolvedChannel, APIRole, ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionChoiceData,
+  ApplicationCommandOptionType, ApplicationCommandType, Attachment, AutocompleteInteraction, CategoryChannel, ChannelType,
+  ChatInputCommandInteraction, ClientApplication, CommandInteractionOptionResolver, GuildBasedChannel, GuildMember, NewsChannel,
+  PermissionFlags, PermissionsBitField, Role, StageChannel, TextChannel, ThreadChannel, User, VoiceChannel, _NonNullableFields
 } from 'discord.js';
 import type * as __ from '@mephisto5558/better-types'; /* eslint-disable-line import-x/no-namespace -- load in global definitions */
 import type { I18nProvider, Locale, Translator } from '@mephisto5558/i18n';
@@ -25,11 +26,148 @@ export type commandDoneFn<cmd extends Command = Command<CommandType[], boolean>>
 
 export declare const commandTypes: { readonly [K in CommandType]: K };
 
-type StrictCommand<CT extends readonly CommandType[], DM extends boolean> = Command<NoInfer<CT>, NoInfer<DM>>;
-type StrictCommandOption<CT extends readonly CommandType[], DM extends boolean, AO = never> = CommandOption<NoInfer<CT>, NoInfer<DM>, NoInfer<AO>>;
+type DefaultOptionType<CT extends readonly CommandType[], DM extends boolean>
+  = CommandOptionConfig<CT, DM, never, readonly unknown[]> | CommandOption<CT, DM, never, readonly unknown[]>;
+
+type StrictCommand<
+  CT extends readonly CommandType[], DM extends boolean,
+  Options extends readonly (CommandOptionConfig<CT, DM> | StrictCommandOption<CT, DM>)[] = readonly DefaultOptionType<CT, DM>[]
+> = Command<NoInfer<CT>, NoInfer<DM>, NoInfer<Options>>;
+type StrictCommandOption<
+  CT extends readonly CommandType[], DM extends boolean, AO = never,
+  Options extends readonly (CommandOptionConfig<CT, DM> | StrictCommandOption<CT, DM>)[] = readonly DefaultOptionType<CT, DM>[]
+> = CommandOption<NoInfer<CT>, NoInfer<DM>, NoInfer<AO>, NoInfer<Options>>;
+
+type OptionName<Options extends readonly unknown[], Type extends keyof typeof ApplicationCommandOptionType>
+  = Options[number] extends infer O
+    ? O extends { type: Type; name: infer N } ? (N extends string ? N : never)
+    : O extends { type: 'Subcommand' | 'SubcommandGroup'; options: infer SubOptions }
+      ? (SubOptions extends readonly unknown[] ? OptionName<SubOptions, Type> : never)
+      : never
+    : never;
+
+type GetOption<Options extends readonly unknown[], Name extends string, Type extends keyof typeof ApplicationCommandOptionType>
+  = Options[number] extends infer O
+    ? O extends { name: Name; type: Type } ? O
+    : O extends { type: 'Subcommand' | 'SubcommandGroup'; options: infer SubOptions }
+      ? (SubOptions extends readonly unknown[] ? GetOption<SubOptions, Name, Type> : never)
+      : never
+    : never;
+
+type ResolvedChannelType<T extends ChannelType>
+  = T extends ChannelType.GuildText ? TextChannel
+  : T extends ChannelType.GuildVoice ? VoiceChannel
+  : T extends ChannelType.GuildCategory ? CategoryChannel
+  : T extends ChannelType.GuildAnnouncement ? NewsChannel
+  : T extends ChannelType.GuildStageVoice ? StageChannel
+  : T extends ChannelType.PublicThread | ChannelType.PrivateThread | ChannelType.AnnouncementThread ? ThreadChannel
+  : GuildBasedChannel;
+
+type MapChannelTypes<Types extends readonly ChannelType[]> = ResolvedChannelType<Types[number]>;
+
+type ResolvedChannel<Options extends readonly unknown[], Name extends string>
+  = GetOption<Options, Name, 'Channel'> extends { channelTypes: readonly ChannelType[] }
+    ? MapChannelTypes<GetOption<Options, Name, 'Channel'>['channelTypes']>
+    : GuildBasedChannel | APIInteractionDataResolvedChannel;
+
+type ResolvedSubcommand<Options extends readonly unknown[]>
+  = OptionName<Options, 'Subcommand'> extends never ? string : OptionName<Options, 'Subcommand'>;
+
+type ResolvedSubcommandGroup<Options extends readonly unknown[]>
+  = OptionName<Options, 'SubcommandGroup'> extends never ? string : OptionName<Options, 'SubcommandGroup'>;
+
+type ResolveValue<Option, BaseType>
+  = Option extends { choices: readonly (infer C)[] } ? (C extends { value: infer V } ? V : C)
+  : BaseType;
+
+type ResolvedValue<Options extends readonly unknown[], Name extends string, Type extends keyof typeof ApplicationCommandOptionType, BaseType>
+  = ResolveValue<GetOption<Options, Name, Type>, BaseType>;
+
+type TypeSafeOptionResolver<Options extends readonly unknown[]> = StrictOmit<
+  /* eslint-disable-next-line sonarjs/max-union-size */
+  CommandInteractionOptionResolver, 'getString' | 'getInteger' | 'getNumber' | 'getBoolean' | 'getUser'
+  | 'getMember' | 'getChannel' | 'getRole' | 'getAttachment' | 'getMentionable' | 'getSubcommand' | 'getSubcommandGroup'
+> & {
+  /* eslint-disable @typescript-eslint/unified-signatures -- unifying them would result in lost accuracy */
+  getString<N extends OptionName<Options, 'String'>>(name: N, required: true): ResolvedValue<Options, N, 'String', string>;
+  getString<N extends OptionName<Options, 'String'>>(name: N, required?: boolean): ResolvedValue<Options, N, 'String', string>
+    | (GetOption<Options, N, 'String'> extends { required: true } ? never : null);
+  getString(name: string, required: true): string;
+  getString(name: string, required?: boolean): string | null;
+
+  getInteger<N extends OptionName<Options, 'Integer'>>(name: N, required: true): ResolvedValue<Options, N, 'Integer', number>;
+  getInteger<N extends OptionName<Options, 'Integer'>>(name: N, required?: boolean): ResolvedValue<Options, N, 'Integer', number>
+    | (GetOption<Options, N, 'Integer'> extends { required: true } ? never : null);
+  getInteger(name: string, required: true): number;
+  getInteger(name: string, required?: boolean): number | null;
+
+  getNumber<N extends OptionName<Options, 'Number'>>(name: N, required: true): ResolvedValue<Options, N, 'Number', number>;
+  getNumber<N extends OptionName<Options, 'Number'>>(name: N, required?: boolean): ResolvedValue<Options, N, 'Number', number>
+    | (GetOption<Options, N, 'Number'> extends { required: true } ? never : null);
+  getNumber(name: string, required: true): number;
+  getNumber(name: string, required?: boolean): number | null;
+
+  getBoolean(name: OptionName<Options, 'Boolean'>, required: true): boolean;
+  getBoolean<N extends OptionName<Options, 'Boolean'>>(name: N, required?: boolean): GetOption<Options, N, 'Boolean'> extends { required: true }
+    ? boolean : boolean | null;
+  getBoolean(name: string, required: true): boolean;
+  getBoolean(name: string, required?: boolean): boolean | null;
+
+  getUser(name: OptionName<Options, 'User'>, required: true): User;
+  getUser<N extends OptionName<Options, 'User'>>(name: N, required?: boolean): GetOption<Options, N, 'User'> extends { required: true }
+    ? User : User | null;
+  getUser(name: string, required: true): User;
+  getUser(name: string, required?: boolean): User | null;
+
+  getMember(name: OptionName<Options, 'User'>): GuildMember | null;
+  getMember(name: string): GuildMember | null;
+
+  getChannel<N extends OptionName<Options, 'Channel'>>(name: N, required: true, channelTypes?: readonly ChannelType[]):
+  ResolvedChannel<Options, N>;
+  getChannel<N extends OptionName<Options, 'Channel'>>(name: N, required: false, channelTypes?: readonly ChannelType[]):
+    ResolvedChannel<Options, N>
+    | (GetOption<Options, N, 'Channel'> extends { required: true } ? never : null);
+  getChannel<N extends OptionName<Options, 'Channel'>>(name: N, required?: boolean, channelTypes?: readonly ChannelType[]):
+    ResolvedChannel<Options, N>
+    | (GetOption<Options, N, 'Channel'> extends { required: true } ? never : null);
+  getChannel(name: string, required: true, channelTypes?: readonly ChannelType[]): GuildBasedChannel | APIInteractionDataResolvedChannel;
+  getChannel(name: string, required: false, channelTypes?: readonly ChannelType[]): GuildBasedChannel | APIInteractionDataResolvedChannel | null;
+  getChannel(name: string, required?: boolean, channelTypes?: readonly ChannelType[]): GuildBasedChannel | APIInteractionDataResolvedChannel | null;
+
+  getRole(name: OptionName<Options, 'Role'>, required: true): Role | APIRole;
+  getRole<N extends OptionName<Options, 'Role'>>(name: N, required?: boolean): GetOption<Options, N, 'Role'> extends { required: true }
+    ? Role | APIRole : Role | APIRole | null;
+  getRole(name: string, required: true): Role | APIRole;
+  getRole(name: string, required?: boolean): Role | APIRole | null;
+
+  getAttachment(name: OptionName<Options, 'Attachment'>, required: true): Attachment;
+  getAttachment<N extends OptionName<Options, 'Attachment'>>(
+    name: N, required?: boolean
+  ): GetOption<Options, N, 'Attachment'> extends { required: true } ? Attachment : Attachment | null;
+  getAttachment(name: string, required: true): Attachment;
+  getAttachment(name: string, required?: boolean): Attachment | null;
+
+  getMentionable(name: OptionName<Options, 'Mentionable'>, required: true): User | GuildMember | Role | APIRole;
+  getMentionable<N extends OptionName<Options, 'Mentionable'>>(
+    name: N, required?: boolean
+  ): GetOption<Options, N, 'Mentionable'> extends { required: true }
+    ? User | GuildMember | Role | APIRole : User | GuildMember | Role | APIRole | null;
+  getMentionable(name: string, required: true): User | GuildMember | Role | APIRole;
+  getMentionable(name: string, required?: boolean): User | GuildMember | Role | APIRole | null;
+
+  getSubcommand(required?: true): ResolvedSubcommand<Options>;
+  getSubcommand(required: boolean): ResolvedSubcommand<Options> | null;
+
+  getSubcommandGroup(required?: true): ResolvedSubcommandGroup<Options>;
+  getSubcommandGroup(required: boolean): ResolvedSubcommandGroup<Options> | null;
+  /* eslint-enable @typescript-eslint/unified-signatures */
+};
 
 /* eslint-disable-next-line @typescript-eslint/consistent-type-definitions */
-export interface CommandConfig<CT extends readonly CommandType[], DM extends boolean> {
+export interface CommandConfig<
+  CT extends readonly CommandType[], DM extends boolean,
+  Options extends readonly (CommandOptionConfig<CT, DM> | StrictCommandOption<CT, DM>)[] = readonly DefaultOptionType<CT, DM>[]
+> {
   types: CT;
   usage?: { usage?: string; examples?: string } & {};
   aliases?: { [K in NoInfer<CT>[number]]?: string[] } & {};
@@ -43,15 +181,18 @@ export interface CommandConfig<CT extends readonly CommandType[], DM extends boo
   noDefer?: boolean;
   ephemeralDefer?: boolean;
 
-  options?: (StrictCommandOption<CT, DM> | CommandOptionConfig<CT, DM>)[];
+  options?: Options;
 
   beta?: true;
 
-  run: StrictCommand<CT, DM>['run'];
+  run: StrictCommand<CT, DM, Options>['run'];
 }
 
 /* eslint-disable-next-line @typescript-eslint/consistent-type-definitions */
-export interface CommandOptionConfig<CT extends readonly CommandType[], DM extends boolean, AO = never> {
+export interface CommandOptionConfig<
+  CT extends readonly CommandType[], DM extends boolean, AO = never,
+  Options extends readonly (CommandOptionConfig<CT, DM> | StrictCommandOption<CT, DM>)[] = readonly DefaultOptionType<CT, DM>[]
+> {
   name: string;
   type: keyof typeof ApplicationCommandOptionType;
   required?: boolean;
@@ -74,9 +215,9 @@ export interface CommandOptionConfig<CT extends readonly CommandType[], DM exten
   minLength?: number;
   maxLength?: number;
 
-  options?: (StrictCommandOption<CT, DM> | CommandOptionConfig<CT, DM>)[];
+  options?: Options;
 
-  run?: StrictCommandOption<CT, DM, AO>['run'];
+  run?: StrictCommandOption<CT, DM, AO, Options>['run'];
 }
 
 export declare class CommandExecutionError extends Error {
@@ -93,7 +234,10 @@ export declare class CommandExecutionError extends Error {
 
 export declare class Command<
   const commandTypes extends readonly CommandType[] = [],
-  const runsInDM extends boolean = false
+  const runsInDM extends boolean = false,
+  const Options extends readonly (
+    CommandOptionConfig<commandTypes, runsInDM> | StrictCommandOption<commandTypes, runsInDM>
+  )[] = readonly DefaultOptionType<commandTypes, runsInDM>[]
 > {
   name: Lowercase<string>;
   id: `commands.${Command['category']}.${Command['name']}`;
@@ -133,13 +277,13 @@ export declare class Command<
 
   run: (
     this: ResolveContext<{
-      slash: ChatInputCommandInteraction<runsInDM extends false ? true : false>;
+      slash: StrictOmit<ChatInputCommandInteraction<runsInDM extends false ? true : false>, 'options'> & { options: TypeSafeOptionResolver<Options> };
       prefix: Message<runsInDM extends false ? true : false>;
     }, NoInfer<commandTypes>>,
     lang: Translator, client: Client
   ) => Promise<never>;
 
-  constructor(config: CommandConfig<commandTypes, runsInDM>);
+  constructor(config: CommandConfig<commandTypes, runsInDM, Options>);
 
   init(i18n: I18nProvider, filePath: string, logger: {
     log: typeof console.log;
@@ -171,7 +315,10 @@ export declare class Command<
 export declare class CommandOption<
   const commandTypes extends readonly CommandType[] = [],
   const runsInDM extends boolean = false,
-  const additionalRunOpts = never
+  const additionalRunOpts = never,
+  const Options extends readonly (
+    CommandOptionConfig<commandTypes, runsInDM> | StrictCommandOption<commandTypes, runsInDM>
+  )[] = readonly DefaultOptionType<commandTypes, runsInDM>[]
 > {
   name: Lowercase<string>;
   id: `${string}.options.${CommandOption['name']}`;
@@ -212,11 +359,11 @@ export declare class CommandOption<
   options: StrictCommandOption<commandTypes, runsInDM>[];
 
   run: (
-    this: ThisParameterType<StrictCommand<commandTypes, runsInDM>['run']>,
+    this: ThisParameterType<StrictCommand<commandTypes, runsInDM, Options>['run']>,
     lang: Translator, options: additionalRunOpts, client: Client
   ) => Promise<never>;
 
-  constructor(config: CommandOptionConfig<commandTypes, runsInDM, additionalRunOpts>);
+  constructor(config: CommandOptionConfig<commandTypes, runsInDM, additionalRunOpts, Options>);
 
   init(i18n: I18nProvider, parentId: Command['id'] | CommandOption['id'], logger: {
     log: typeof console.log;
@@ -226,7 +373,7 @@ export declare class CommandOption<
 
   /** `translator` and `options` should not be supplied by an external caller. */
   generateAutocomplete(
-    interaction: CommandInteraction | Message,
+    interaction: AutocompleteInteraction | Message,
     query: string, locale: Locale, translator?: Translator<true>,
     options?: StrictCommandOption<commandTypes, runsInDM>['autocompleteOptions']
   ): Promise<[] | autocompleteObject[]>;
