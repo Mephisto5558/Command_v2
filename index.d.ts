@@ -1,10 +1,11 @@
+/* eslint-disable max-lines */
 /* eslint-disable @typescript-eslint/consistent-indexed-object-style -- using index signature to improve readability for lib user */
 
 import type {
   APIInteractionDataResolvedChannel, APIRole, ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionChoiceData,
-  ApplicationCommandOptionType, ApplicationCommandType, Attachment, AutocompleteInteraction, CategoryChannel, ChannelType,
-  ChatInputCommandInteraction, ClientApplication, CommandInteractionOptionResolver, GuildBasedChannel, GuildMember, Message, NewsChannel,
-  PermissionFlags, PermissionsBitField, Role, StageChannel, TextChannel, ThreadChannel, User, VoiceChannel, _NonNullableFields
+  ApplicationCommandOptionType, ApplicationCommandType, Attachment, AutocompleteInteraction, CacheType, CategoryChannel, ChannelType,
+  ChatInputCommandInteraction as _ChatInputCommandInteraction, ClientApplication, CommandInteractionOptionResolver, GuildBasedChannel, GuildMember,
+  Message, NewsChannel, PermissionFlags, PermissionsBitField, Role, StageChannel, TextChannel, ThreadChannel, User, VoiceChannel, _NonNullableFields
 } from 'discord.js';
 import type * as __ from '@mephisto5558/better-types'; /* eslint-disable-line import-x/no-namespace -- load in global definitions */
 import type { I18nProvider, Locale, Translator } from '@mephisto5558/i18n';
@@ -23,6 +24,22 @@ export type commandDoneFn<cmd extends Command = Command<CommandType[], boolean>>
   this: ThisParameterType<cmd['run']>,
   command: cmd, lang: Translator
 ) => Promise<never>;
+
+/**
+ * @returns If a permsision error was found: Parameters for `Translator`
+ * @returns If a permission error was handled by the function: `true`
+ * @returns If no permission error was found: `false`
+ */
+export type customPermissionChecksFn<
+  cmd extends Command = Command<CommandType[], boolean>
+> = ((
+  this: cmd, interaction: ThisParameterType<cmd['run']>,
+  author: User, translator: Translator<false, Locale>
+) => Promise<Parameters<Translator> | boolean>)
+| ((
+  this: cmd, interaction: ThisParameterType<cmd['run']>,
+  author: User, translator: Translator<false, Locale>
+) => Parameters<Translator> | boolean);
 
 export declare const commandTypes: { readonly [K in CommandType]: K };
 
@@ -275,6 +292,12 @@ export declare class Command<
 
   beta?: boolean;
 
+  config: {
+    devIds: Set<Snowflake>; devOnlyCategories: Set<string>;
+    runBetaCommandsOnly: boolean;
+    replyOn: { disabled: boolean; nonBeta: boolean };
+  };
+
   run: (
     this: ResolveContext<{
       slash: StrictOmit<ChatInputCommandInteraction<runsInDM extends false ? true : false>, 'options'> & { options: TypeSafeOptionResolver<Options> };
@@ -285,12 +308,20 @@ export declare class Command<
 
   constructor(config: CommandConfig<commandTypes, runsInDM, Options>);
 
-  init(i18n: I18nProvider, filePath: string, logger: {
-    log: typeof console.log;
-    warn: typeof console.warn;
-    error: typeof console.error;
-    debug: typeof console.debug;
-  }, doneFn?: commandDoneFn<StrictCommand<commandTypes, runsInDM>>): this;
+  init(i18n: I18nProvider, filePath: string, config?: {
+    logger?: {
+      log: typeof console.log;
+      warn: typeof console.warn;
+      error: typeof console.error;
+      debug: typeof console.debug;
+    };
+    doneFn?: commandDoneFn<StrictCommand<commandTypes, runsInDM>>;
+    customPermissionChecks?: customPermissionChecksFn<StrictCommand<commandTypes, runsInDM>>;
+
+    devIds?: Set<Snowflake>; devOnlyCategories?: Set<string>;
+    runBetaCommandsOnly?: boolean;
+    replyOn?: { disabled?: boolean; nonBeta?: boolean };
+  }): this;
 
   async runWrapper(Interaction: ThisParameterType<StrictCommand<commandTypes, runsInDM>['run']>, i18n: I18nProvider, locale: Locale): Promise<never>;
 
@@ -322,6 +353,7 @@ export declare class CommandOption<
 > {
   name: Lowercase<string>;
   id: `${string}.options.${CommandOption['name']}`;
+  position: number;
 
   /** Currently not used */
   nameLocalizations?: Record<Locale, Lowercase<string>>;
@@ -365,11 +397,18 @@ export declare class CommandOption<
 
   constructor(config: CommandOptionConfig<commandTypes, runsInDM, additionalRunOpts, Options>);
 
-  init(i18n: I18nProvider, parentId: Command['id'] | CommandOption['id'], logger: {
+  /* eslint-disable-next-line @typescript-eslint/no-unused-private-class-members */
+  private init(i18n: I18nProvider, parentId: Command['id'] | CommandOption['id'], logger?: {
     log: typeof console.log;
     warn: typeof console.warn;
     error: typeof console.error;
-  }): this;
+  }, position?: number): this;
+
+  /* eslint-disable-next-line @typescript-eslint/no-unused-private-class-members */
+  private isRunnable(
+    interaction: Parameters<customPermissionChecksFn>[0], command: StrictCommand<commandTypes, runsInDM, Options>,
+    wrapperTranslator: Translator<false, Locale>, args?: string[]
+  ): ReturnType<customPermissionChecksFn>;
 
   /** `translator` and `options` should not be supplied by an external caller. */
   generateAutocomplete(

@@ -1,14 +1,14 @@
 /* eslint-disable max-lines */
 
 /**
- * @import { Locale } from '@mephisto5558/i18n'
- * @import { Command as CommandT, CommandOption as CommandOptionT, CommandType, CommandConfig, CommandOptionConfig, CommandExecutionError as CommandExecutionErrorT } from '.' */ /* eslint-disable-line @stylistic/max-len */
+ * @import { Locale, Translator } from '@mephisto5558/i18n'
+ * @import { Command as CommandT, CommandOption as CommandOptionT, CommandType, CommandConfig, CommandOptionConfig, CommandExecutionError as CommandExecutionErrorT, customPermissionChecksFn } from '.' */ /* eslint-disable-line @stylistic/max-len */
 
 
 const
   {
     ApplicationCommandOptionType, ApplicationCommandType, ChannelType,
-    Colors, CommandInteraction, EmbedBuilder, Message, MessageFlags, PermissionsBitField, Role, inlineCode
+    Colors, CommandInteraction, EmbedBuilder, Message, MessageFlags, PermissionsBitField, inlineCode
   } = require('discord.js'),
   { basename, dirname } = require('node:path'),
   {
@@ -65,7 +65,7 @@ class CommandOption {
   name;
 
   /** @type {string} */ description;
-  descriptionLocalizations = {};
+  /** @type {CommandOptionT['descriptionLocalizations']} */ descriptionLocalizations = {};
 
   type;
   required = false;
@@ -91,14 +91,14 @@ class CommandOption {
       if (config.cooldowns.user) this.cooldowns.user = config.cooldowns.user;
     }
     if (config.dmPermission) this.dmPermission = config.dmPermission;
+    if (config.choices) this.choices = config.choices.map(e => ({ value: e }));
     if (config.strictAutocomplete) this.strictAutocomplete = config.strictAutocomplete;
     if (config.options) this.options = config.options.map(e => (e instanceof CommandOption ? e : new CommandOption(e)));
 
     this.name = config.name;
-    this.type = config.type;
+    this.type = ApplicationCommandOptionType[config.type]; // todo: make the user use that
 
     this.autocompleteOptions = config.autocompleteOptions;
-    this.choices = config.choices.map(e => ({ value: e }));
 
     this.channelTypes = config.channelTypes;
 
@@ -110,16 +110,17 @@ class CommandOption {
   }
 
   /** @type {CommandOptionT['init']} */
-  init(i18n, parentId, logger = console) {
+  init(i18n, parentId, logger = console, position = 0) {
     this.#i18n = i18n;
     this.#logger = logger;
 
     this.id = `${parentId}.options.${this.name}`;
+    this.position = position;
 
     this.#validate();
     this.#localize();
 
-    for (const option of this.options) option.init(i18n, this.id, logger);
+    for (const [i, option] of this.options.entries()) option.init(i18n, this.id, logger, i);
 
     return this;
   }
@@ -204,6 +205,73 @@ class CommandOption {
         );
       }
     }
+  }
+
+  /** @type {CommandOptionT<CommandType[], boolean>['isRunnable']} */
+  async isRunnable(interaction, command, wrapperTranslator, args) {
+    if (
+      [ApplicationCommandOptionType.SubcommandGroup, ApplicationCommandOptionType.Subcommand].includes(this.type)
+      && !this.dmPermission && interaction.channel.type == ChannelType.DM
+    ) return ['guildOnly'];
+
+    if (this.type == ApplicationCommandOptionType.SubcommandGroup) {
+      const
+        subcommandName = interaction instanceof CommandInteraction ? interaction.options.getSubcommand(true) : args[0],
+        subcommand = this.options.find(e => e.name == subcommandName);
+
+      // subcommand should always exist, `false` is a fallback
+      return subcommand?.isRunnable(
+        interaction, command, wrapperTranslator,
+        interaction instanceof Message ? args.slice(1) : args
+      ) ?? false;
+    }
+
+    if (this.type == ApplicationCommandOptionType.Subcommand) {
+      for (const option of this.options) {
+        const err = await option.isRunnable(interaction, command, wrapperTranslator, args);
+        if (err) return err;
+      }
+
+      return false;
+    }
+
+    const
+      option = interaction instanceof Message ? undefined : interaction.options.get(this.name)?.value,
+      arg = args?.[this.position];
+
+    if (this.required && option === undefined && !arg) {
+      return ['paramRequired', {
+        option: this.name,
+        description: (wrapperTranslator.config.locale ? this.descriptionLocalizations[wrapperTranslator.config.locale] : undefined)
+          ?? this.descriptionLocalizations[wrapperTranslator.defaultConfig.defaultLocale] ?? this.description
+      }];
+    }
+
+    const channel = interaction instanceof Message ? interaction.guild.channels.cache.get(arg) : interaction.options.getChannel(this.name);
+
+    if (this.type == ApplicationCommandOptionType.Channel && this.channelTypes && channel && !this.channelTypes.includes(channel.type))
+      return ['invalidChannelType', this.name];
+
+    if (
+      interaction instanceof Message && this.autocomplete && this.strictAutocomplete && arg
+      && (await this.generateAutocomplete(interaction, arg, wrapperTranslator.config.locale ?? wrapperTranslator.defaultConfig.defaultLocale))
+        .some(e => e.value.toString().toLowerCase() === arg.toLowerCase())
+    ) {
+      if (typeof this.autocompleteOptions == 'function') return ['strictAutocompleteNoMatch', this.name];
+
+      return ['strictAutocompleteNoMatchWValues', {
+        option: this.name,
+        availableOptions: Array.isArray(this.autocompleteOptions)
+          ? this.autocompleteOptions.map(e => (typeof e == 'object' ? e.value : e)).map(inlineCode).join(', ')
+          : this.autocompleteOptions
+      }];
+    }
+
+
+    if (interaction instanceof Message && arg && this.choices && !this.choices.some(e => e.value == arg))
+      return ['strictAutocompleteNoMatchWValues', { option: this.name, availableOptions: this.choices.map(e => inlineCode(e.value)).join(', ') }];
+
+    return false;
   }
 
   /** @type {CommandOptionT['generateAutocomplete']} */
@@ -313,13 +381,21 @@ class Command {
   noDefer = false;
   ephemeralDefer = false;
 
+  config = {
+    devIds: new Set(), devOnlyCategories: new Set(),
+    runBetaCommandsOnly: false,
+    replyOn: { disabled: true, nonBeta: true }
+  };
+
   /** @type {CommandOptionT[]} */ options = [];
 
   /** @type {string} */ #filePath;
 
   /** @type {Parameters<CommandT<CommandType[], boolean>['init']>[0]} */ #i18n;
-  /** @type {Parameters<CommandT<CommandType[], boolean>['init']>['2']} */ #logger;
-  /** @type {Parameters<CommandT<CommandType[], boolean>['init']>['3']} */ #doneFn;
+  /** @type {NonNullable<Parameters<CommandT<CommandType[], boolean>['init']>['2']>['logger']} */ #logger;
+  /** @type {NonNullable<Parameters<CommandT<CommandType[], boolean>['init']>['2']>['doneFn']} */ #doneFn;
+  /** @type {customPermissionChecksFn | undefined} */ #customPermissionChecks;
+
 
   /** @param {CommandConfig<CommandType[], boolean>} config */
   constructor(config) {
@@ -360,13 +436,23 @@ class Command {
   }
 
   /** @type {CommandT<CommandType[], boolean>['init']} */
-  /* eslint-disable-next-line @typescript-eslint/no-useless-default-assignment, unicorn/no-useless-undefined -- optional without default */
-  init(i18n, filePath, logger = console, doneFn = undefined) {
+  init(i18n, filePath, {
+    logger = console, doneFn, devIds, devOnlyCategories, runBetaCommandsOnly, replyOn = {},
+    customPermissionChecks
+  } = {}) {
     this.#filePath = filePath;
 
     this.#i18n = i18n;
     this.#logger = logger;
     this.#doneFn = doneFn;
+    this.#customPermissionChecks = customPermissionChecks?.bind(this);
+
+    if (devIds) this.config.devIds = devIds;
+    if (devOnlyCategories) this.config.devOnlyCategories = devOnlyCategories;
+    this.config.runBetaCommandsOnly = !!runBetaCommandsOnly;
+
+    this.config.replyOn.disabled = !!replyOn.disabled;
+    this.config.replyOn.nonBeta = !!replyOn.nonBeta;
 
     this.name = filename(this.#filePath).toLowerCase();
     this.category = basename(dirname(this.#filePath)).toLowerCase();
@@ -375,8 +461,8 @@ class Command {
     this.#validate();
     this.#localize();
 
-    for (const option of this.options)
-      option.init(this.#i18n, this.id, this.#logger);
+    for (const option of this.options) option.init(this.#i18n, this.id, this.#logger, 0);
+    for (const [i, option] of this.options.entries()) option.init(this.#i18n, this.id, this.#logger, i);
 
     return this;
   }
@@ -425,7 +511,7 @@ class Command {
       commandTranslator = i18n.getTranslator({ locale, backupPaths: [this.id] }),
       commandType = interaction instanceof CommandInteraction ? commandTypes.slash : commandTypes.prefix,
 
-      errorKey = await this.#isRunnable(wrapperTranslator);
+      errorKey = await this.#isRunnable(interaction, wrapperTranslator);
 
     if (errorKey !== false) {
       if (errorKey === true) return; // already handled by the function
@@ -450,46 +536,57 @@ class Command {
   }
 
   /**
-   * @param {ThisParameterType<CommandT<CommandType[], boolean>['run']>} interaction
-   * @returns {Promise<[string, Record<string, string> | string | undefined] | boolean>} */
-  async #isRunnable(interaction) {
-    if (interaction.client.config.devOnlyCategories.includes(this.category) && !interaction.client.config.devIds.has(interaction.author.id)) return true;
+   * @param {Parameters<customPermissionChecksFn>[0]} interaction
+   * @param {Translator} wrapperTranslator
+   * @returns {ReturnType<customPermissionChecksFn>} */
+  async #isRunnable(interaction, wrapperTranslator) {
+    const
+      author = interaction instanceof Message ? interaction.author : interaction.user,
+      args = interaction instanceof Message ? interaction.content.split(/\s+/).slice(1) : undefined;
 
-    if (interaction.client.botType == 'dev' && !this.beta) return interaction.client.config.replyOnNonBetaCommand ? ['nonBeta'] : true;
-    if (this.disabled) return interaction.client.config.replyOnDisabledCommand ? ['disabled', this.disabledReason ?? 'Not provided'] : true;
+    if (this.config.devOnlyCategories.has(this.category) && !this.config.devIds.has(author.id)) return true;
+
+    if (this.config.runBetaCommandsOnly && !this.beta) return this.config.replyOn.nonBeta ? ['nonBeta'] : true;
+    if (this.disabled) return this.config.replyOn.disabled ? ['disabled', this.disabledReason ?? 'Not provided'] : true;
 
     if (interaction instanceof Message) {
-      if (!this.types.includes('prefix')) return ['slashOnly', this.mention];
+      if (!this.types.includes(commandTypes.prefix)) return ['slashOnly', this.mention];
       if (interaction.guild?.members.me.communicationDisabledUntil) return true;
     }
 
     if (!this.dmPermission && interaction.channel.type == ChannelType.DM) return ['guildOnly'];
+    if (this.category == 'nsfw' && !interaction.channel?.nsfw) return ['nsfw'];
 
-
-    const disabledList = interaction.guild?.db.config.commands?.[(this.aliasOf ?? this).name]?.disabled;
-    if (disabledList && interaction.member && interaction.member.id != interaction.guild.ownerId) {
-      if (Object.values(disabledList).some(e => Array.isArray(e) && e.includes('*'))) return ['notAllowed.anyone'];
-      if (disabledList.users?.includes(interaction.author.id)) return ['notAllowed.user'];
-      if (disabledList.channels?.includes(interaction.channel.id)) return ['notAllowed.channel'];
-      if (
-        disabledList.roles && ('cache' in interaction.member.roles ? interaction.member.roles.cache : interaction.member.roles)
-          .some(e => disabledList.roles.includes(e instanceof Role ? e.id : e))
-      ) return ['notAllowed.role'];
+    if (this.#customPermissionChecks) {
+      const customErr = await this.#customPermissionChecks(interaction, author, wrapperTranslator);
+      if (customErr) return customErr;
     }
 
-    if (this.category == 'nsfw' && !interaction.channel.nsfw) return ['nsfw'];
+    let activeOption;
+    if (interaction instanceof CommandInteraction) {
+      const group = interaction.options.getSubcommandGroup(false);
+      if (group) activeOption = this.options.find(e => e.name == group);
+      else {
+        const subcommand = interaction.options.getSubcommand(false);
+        if (subcommand) activeOption = this.options.find(e => e.name == subcommand);
+      }
+    }
+    else if (interaction instanceof Message) {
+      activeOption = this.options.find(e => e.name == args[0]
+        && [ApplicationCommandOptionType.Subcommand, ApplicationCommandOptionType.SubcommandGroup].includes(e.type)) ?? activeOption;
+    }
 
-    if (this.options.length) {
-      const err = await checkOptions.call(interaction, this, wrapperTranslator);
+    for (const option of activeOption ? [activeOption] : this.options) {
+      const err = await option.isRunnable(interaction, this, wrapperTranslator, args?.slice(activeOption && interaction instanceof Message ? 1 : 0));
       if (err) return err;
     }
 
-    if (interaction.client.botType != 'dev') {
-      const cooldown = cooldowns.call(interaction, (this.aliasOf ?? this).name, this.cooldowns);
+    if (!this.config.runBetaCommandsOnly) {
+      const cooldown = cooldowns.call(interaction, this.name, this.cooldowns);
       if (cooldown) return ['cooldown', inlineCode(cooldown)];
     }
 
-    return interaction.inGuild() && (interaction instanceof Message || interaction instanceof CommandInteraction) && await checkPerms.call(interaction, this, lang);
+    return interaction.inGuild() && await checkPerms.call(interaction, this, wrapperTranslator);
   }
 
   /**

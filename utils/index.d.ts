@@ -1,18 +1,9 @@
 import type { BaseInteraction, Message } from 'discord.js';
 import type { I18nProvider, Locale } from '@mephisto5558/i18n';
-import type { Command, CommandType } from '..';
 
 export { default as constants } from './constants';
 
 export declare function capitalize<T extends string>(str: T): Capitalize<T>;
-
-/**
- * @returns The error key and replacement values for `lang()` or `false` if no error.
- * Returns `true` if error happend but has been handled internally. */
-export declare function checkForErrors(
-  this: BaseInteraction | Message,
-  command: Command<CommandType[], boolean> | undefined, lang: lang
-): Promise<[string, Record<string, string> | string | undefined] | boolean>;
 
 /** Formats an application command name and id into a command mention. */
 export declare function commandMention<CommandName extends string, CommandId extends Snowflake>(
