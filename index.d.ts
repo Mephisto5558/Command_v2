@@ -261,10 +261,10 @@ export declare class Command<
   commandId: ['slash'] extends NoInfer<commandTypes> ? Snowflake : undefined;
 
   /** Currently not used */
-  nameLocalizations?: Record<Locale, Lowercase<string>>;
+  nameLocalizations?: Partial<Record<Locale, Lowercase<string>>>;
 
   description: string;
-  descriptionLocalizations: Record<Locale, string>;
+  descriptionLocalizations: Partial<Record<Locale, string>>;
 
   category: Lowercase<string>;
 
@@ -272,7 +272,7 @@ export declare class Command<
   types: commandTypes;
 
   usage: { [K in 'usage' | 'examples']: string | undefined } & {};
-  usageLocalizations: Record<Locale, StrictCommand<commandTypes, runsInDM>['usage']>;
+  usageLocalizations: Partial<Record<Locale, StrictCommand<commandTypes, runsInDM>['usage']>>;
 
   aliases: { [K in NoInfer<commandTypes>[number]]: string[] } & {};
   cooldowns: { [K in 'guild' | 'channel' | 'user']: number } & {};
@@ -356,9 +356,9 @@ export declare class CommandOption<
   position: number;
 
   /** Currently not used */
-  nameLocalizations?: Record<Locale, Lowercase<string>>;
+  nameLocalizations?: Partial<Record<Locale, Lowercase<string>>>;
   description: string;
-  descriptionLocalizations: Record<Locale, string>;
+  descriptionLocalizations: Partial<Record<Locale, string>>;
 
   type: ApplicationCommandOptionType;
 
