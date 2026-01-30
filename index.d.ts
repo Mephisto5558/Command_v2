@@ -3,7 +3,7 @@
 import type {
   APIInteractionDataResolvedChannel, APIRole, ApplicationCommand, ApplicationCommandOption, ApplicationCommandOptionChoiceData,
   ApplicationCommandOptionType, ApplicationCommandType, Attachment, AutocompleteInteraction, CategoryChannel, ChannelType,
-  ChatInputCommandInteraction, ClientApplication, CommandInteractionOptionResolver, GuildBasedChannel, GuildMember, NewsChannel,
+  ChatInputCommandInteraction, ClientApplication, CommandInteractionOptionResolver, GuildBasedChannel, GuildMember, Message, NewsChannel,
   PermissionFlags, PermissionsBitField, Role, StageChannel, TextChannel, ThreadChannel, User, VoiceChannel, _NonNullableFields
 } from 'discord.js';
 import type * as __ from '@mephisto5558/better-types'; /* eslint-disable-line import-x/no-namespace -- load in global definitions */
