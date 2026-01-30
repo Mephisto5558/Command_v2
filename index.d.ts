@@ -16,6 +16,8 @@ export { PermissionFlagsBits as Permissions } from 'discord.js';
 
 type ResolveContext<MAP, KEYS extends (keyof MAP)[]> = MAP[KEYS[number]];
 
+export type ChatInputCommandInteraction<Cached extends CacheType = CacheType> = StrictOmit<_ChatInputCommandInteraction<Cached>, 'options'>
+  & { options: TypeSafeOptionResolver<Cached, Options> };
 type autocompleteObject = StrictOmit<ApplicationCommandOptionChoiceData, 'nameLocalizations'>;
 type autocompleteOptions = autocompleteObject['value'] | autocompleteObject;
 export type CommandType = 'slash' | 'prefix';
@@ -100,9 +102,9 @@ type ResolveValue<Option, BaseType>
 type ResolvedValue<Options extends readonly unknown[], Name extends string, Type extends keyof typeof ApplicationCommandOptionType, BaseType>
   = ResolveValue<GetOption<Options, Name, Type>, BaseType>;
 
-type TypeSafeOptionResolver<Options extends readonly unknown[]> = StrictOmit<
+type TypeSafeOptionResolver<Cached extends CacheType = CacheType, Options extends readonly unknown[]> = StrictOmit<
   /* eslint-disable-next-line sonarjs/max-union-size */
-  CommandInteractionOptionResolver, 'getString' | 'getInteger' | 'getNumber' | 'getBoolean' | 'getUser'
+  CommandInteractionOptionResolver<Cached>, 'getString' | 'getInteger' | 'getNumber' | 'getBoolean' | 'getUser'
   | 'getMember' | 'getChannel' | 'getRole' | 'getAttachment' | 'getMentionable' | 'getSubcommand' | 'getSubcommandGroup'
 > & {
   /* eslint-disable @typescript-eslint/unified-signatures -- unifying them would result in lost accuracy */
@@ -300,7 +302,7 @@ export declare class Command<
 
   run: (
     this: ResolveContext<{
-      slash: StrictOmit<ChatInputCommandInteraction<runsInDM extends false ? true : false>, 'options'> & { options: TypeSafeOptionResolver<Options> };
+      slash: ChatInputCommandInteraction<runsInDM extends false ? true : false>;
       prefix: Message<runsInDM extends false ? true : false>;
     }, NoInfer<commandTypes>>,
     lang: Translator, client: Client
