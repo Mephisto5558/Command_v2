@@ -1,5 +1,5 @@
 import { CommandType } from '../classes/utils.ts';
-import capitalize from './capitalize.ts';
+import { capitalize } from './capitalize.ts';
 
 import type * as Discord from 'discord.js';
 import type { Locale, Translator } from '@mephisto5558/i18n';
@@ -8,7 +8,7 @@ import type { CommandInitialized as Command, CommandManager } from '../index.ts'
 type category = { category: string; subTitle: ''; aliasesDisabled: boolean; list: command[] };
 type command = { commandName: string; commandUsage: string; commandDescription: string; commandAlias: string };
 
-export default function getCommands(
+export function getCommands(
   this: Discord.Client,
   lang: Translator<true, Locale>,
   commands: CommandManager['commands'],
@@ -50,7 +50,7 @@ export default function getCommands(
   commandList.sort((a, b) => a.category == 'others' ? 1 : b.list.length - a.list.length);
   return commandList.map(e => {
     e.category = lang(`commands.${e.category}.categoryName`) ?? '';
-    e.aliasesDisabled = !e.list.some(e => e.commandAlias != lang('global.none'));
+    e.aliasesDisabled = e.list.every(e => e.commandAlias == lang('global.none'));
     return e;
   });
 }

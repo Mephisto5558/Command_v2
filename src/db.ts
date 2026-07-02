@@ -5,7 +5,7 @@ import type { CommandInitialized as Command } from './index.ts';
 export type Database = {
   botSettings: {
     cmdStats: Record<Command['name'], {
-      createdAt: Date;
+      createdAt: Temporal.Instant;
     } & Partial<Record<CommandType, number>>>;
   };
   guildSettings: Record<Discord.Guild['id'], {

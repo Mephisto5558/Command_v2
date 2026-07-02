@@ -1,10 +1,10 @@
-import config, { getModifiedRule, jsGlob, pluginNames, tsGlob } from '@mephisto5558/eslint-config';
+import config, { getModifiedRule, pluginNames, tsGlob } from '@mephisto5558/eslint-config';
 
 export default [
   ...config,
   {
     name: 'templates',
-    files: [`templates/*${tsGlob}`, `templates/*${jsGlob}`],
+    files: [`templates/*${tsGlob}`],
     rules: {
       [`${pluginNames.typescript}/no-empty-function`]: 'off',
       [`${pluginNames.typescript}/no-unused-vars`]: 'off'
@@ -12,21 +12,23 @@ export default [
   },
   {
     name: 'overwrite:scripts',
-    files: [`**/*${tsGlob}`, `**/*${jsGlob}`],
+    files: [`**/*${tsGlob}`],
     languageOptions: {
       globals: {}
     },
     rules: {
-      ...getModifiedRule(config, 'no-underscore-dangle', [{
-        allow: [
-          '__count__' // Object#count
-        ]
-      }]),
       'max-lines': 'off', // Class definitions may just be longer.
       [`${pluginNames.typescript}/consistent-type-definitions`]: 'off', // Using interfaces where needed
       ...getModifiedRule(config, `${pluginNames.import}/no-namespace`, [{
         ignore: ['discord.js'] // prevent ugly renaming
       }])
+    }
+  },
+  {
+    name: 'overwrite:utils',
+    files: [`**/utils/*${tsGlob}`],
+    rules: {
+      [`${pluginNames.import}/prefer-default-export`]: 'off'
     }
   },
   {
@@ -40,7 +42,7 @@ export default [
   },
   {
     name: 'overwrite:Tests',
-    files: [`./tests/**/*${jsGlob}`],
+    files: [`./tests/**/*${tsGlob}`],
     rules: {
       ...getModifiedRule(config, 'id-length', [{
         exceptions: ['t']

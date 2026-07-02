@@ -3,7 +3,7 @@ import { toMS } from 'type-better-ms';
 
 import { CommandExecutionError, ContextType, CooldownType, Permission, PermissionType } from '../../index.ts';
 import { descriptionMaxLength } from '../../utils/constants.ts';
-import { CooldownsManager } from '../../utils/index.ts';
+import { CooldownsManager, isCodedError } from '../../utils/index.ts';
 import { CommandOption, CommandOptionUninitialized } from '../commandOption/index.ts';
 import {
   CommandType, CommandValidationError, cooldownConverter, equal,
@@ -325,7 +325,7 @@ export class Command<
 
       try { await author.send({ content: isMessage(interaction) ? interaction.url : '', embeds: [embed] }); }
       catch (err) {
-        if (!(Error.isError(err) && 'code' in err) || err.code != CANNOT_SEND_MESSAGE_API_ERR) throw err;
+        if (!isCodedError(err, CANNOT_SEND_MESSAGE_API_ERR)) throw err;
       }
     }
     else if (isInteraction(interaction))

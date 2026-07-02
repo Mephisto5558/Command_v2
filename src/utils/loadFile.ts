@@ -3,8 +3,9 @@
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { init, isSupported } from 'import-without-cache';
+import { isCodedError } from './isCodedError.ts';
 
-export default async function loadFile(path: string): Promise<unknown> {
+export async function loadFile(path: string): Promise<unknown> {
   try {
     const
       require = createRequire(import.meta.url),
@@ -15,7 +16,7 @@ export default async function loadFile(path: string): Promise<unknown> {
     return require(resolvedPath);
   }
   catch (err) {
-    if (!(err instanceof Error && 'code' in err) || err.code !== 'ERR_REQUIRE_ESM') throw err;
+    if (!isCodedError(err, 'ERR_REQUIRE_ESM')) throw err;
 
     // This does not clear the old file from RAM as that can't be done programmatically.
     if (!isSupported) return import(pathToFileURL(`${path}?t=${Date.now()}`).href);

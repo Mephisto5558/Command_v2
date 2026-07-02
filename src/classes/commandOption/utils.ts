@@ -81,9 +81,13 @@ export interface SubcommandGroupConfig<
 export interface SubcommandConfig<
   CT extends readonly CommandType[], CTX extends AllContexts, AO = undefined,
   ChildrenOptions extends (
-    readonly PrimitiveCommandOptionConfig<CT, CTX>[] // | readonly CommandOptionUninitialized<CT, CTX, AO, never, PrimitiveCommandOptionConfig<CT, CTX>['type']>[]
+    readonly PrimitiveCommandOptionConfig<CT, CTX>[]
+
+  // | readonly CommandOptionUninitialized<CT, CTX, AO, never, PrimitiveCommandOptionConfig<CT, CTX>['type']>[]
   ) = (
-    readonly PrimitiveCommandOptionConfig<CT, CTX>[] // | readonly CommandOptionUninitialized<CT, CTX, AO, never, PrimitiveCommandOptionConfig<CT, CTX>['type']>[]
+    readonly PrimitiveCommandOptionConfig<CT, CTX>[]
+
+  // | readonly CommandOptionUninitialized<CT, CTX, AO, never, PrimitiveCommandOptionConfig<CT, CTX>['type']>[]
   )
 > extends BaseSubcommandConfig<CTX>, StrictOmit<LooseOmit<Discord.ApplicationCommandSubCommand, keyof BaseSubcommandConfig<CTX>>, 'options'> {
   options?: ChildrenOptions;

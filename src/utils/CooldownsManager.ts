@@ -6,7 +6,7 @@ import { CooldownType } from '../index.ts';
 import type { CommandType } from '../classes/utils.ts';
 import type { AllContexts, CommandInitialized as Command, CommandInteraction } from '../index.ts';
 
-export default class CooldownsManager {
+export class CooldownsManager {
   cache = new Map<string, Map<CooldownType, Map<Snowflake, number>>>();
 
   /** @returns milliseconds until the cooldown ends */
@@ -15,6 +15,7 @@ export default class CooldownsManager {
     cooldowns: Partial<Command<CommandType[], AllContexts>['cooldowns']>
   ): number {
     const
+      /* eslint-disable-next-line unicorn/prefer-temporal -- not my choice here */
       createdAt = context.createdAt.getTime(),
       timeStamps = this.cache.getOrInsertComputed(name, () => new Map()),
       currentCooldowns = [];
@@ -25,7 +26,7 @@ export default class CooldownsManager {
       let areaId: Snowflake | undefined;
       switch (cdName) {
         case CooldownType.User:
-          areaId = isMessage(context) ? context.author.id : context.user.id;
+          areaId = (isMessage(context) ? context.author : context.user).id;
           break;
         case CooldownType.Guild:
           areaId = context.guildId ?? undefined;

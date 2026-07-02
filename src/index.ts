@@ -53,9 +53,10 @@ export type ContextToCaching<CTX extends AllContexts>
     ifFalse: undefined;
   }>;
 
-type BuildOrderedCooldown<T extends readonly string[]> = T extends [infer Head extends string, ...infer Tail extends string[]]
-  ? `${number}${Head}` | `${number}${Head}${BuildOrderedCooldown<Tail>}` | BuildOrderedCooldown<Tail>
-  : never;
+type BuildOrderedCooldown<T extends readonly string[]>
+  = T extends [infer Head extends string, ...infer Tail extends string[]]
+    ? `${number}${Head}` | `${number}${Head}${BuildOrderedCooldown<Tail>}` | BuildOrderedCooldown<Tail>
+    : never;
 
 /**
  * This is more limited than what's actually allowed to enforce consitency.
@@ -64,12 +65,7 @@ type BuildOrderedCooldown<T extends readonly string[]> = T extends [infer Head e
 type TimeUnits = ['d', 'h', 'min', 's', 'ms'];
 export type validTimeString = BuildOrderedCooldown<TimeUnits>;
 
-export type Logger = {
-  debug: typeof console.debug;
-  log: typeof console.log;
-  warn: typeof console.warn;
-  error: typeof console.error;
-};
+export type Logger = Pick<Console, 'debug' | 'log' | 'warn' | 'error'>;
 
 export type OptionsG<CT extends readonly CommandType[], CTX extends AllContexts, AO = undefined>
   = readonly (CommandOptionConfig<CT, CTX, AO> | CommandOption<CT, CTX, AO>)[];
@@ -91,10 +87,8 @@ export interface SharedConfig<CTX extends AllContexts> {
 }
 
 
-export type commandDoneFn<CMD extends Command<readonly CommandType[], AllContexts> = Command<readonly CommandType[], AllContexts>> = (
-  this: ThisParameterType<CMD['run']>,
-  command: CMD, lang: Translator<false, Locale>
-) => Promise<never>;
+export type commandDoneFn<CMD extends Command<readonly CommandType[], AllContexts> = Command<readonly CommandType[], AllContexts>>
+  = (this: ThisParameterType<CMD['run']>, command: CMD, lang: Translator<false, Locale>) => Promise<never>;
 
 
 type customPermissionCheckFnParams<CT extends readonly CommandType[], CTX extends AllContexts> = [

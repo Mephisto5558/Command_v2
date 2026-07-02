@@ -9,8 +9,7 @@ import type {
   AllContexts, ChatInputCommandInteraction, CommandInitialized as Command, CommandInteraction,
   Logger, Message, MessageComponentInteraction
 } from '../../index.ts';
-import type CooldownsManager from '../../utils/CooldownsManager.ts';
-import type { CommandUninitialized } from '../command/index.ts';
+import type { CooldownsManager} from '../../utils/CooldownsManager.ts';
 import type { RunnableReturns } from '../command/utils.ts';
 import type { CommandType } from '../utils.ts';
 import type {
@@ -48,6 +47,7 @@ export class CommandOption<
   disabledReason: string | undefined;
 
   get autocomplete(): boolean { return !!this.autocompleteOptions; }
+  /* eslint-disable-next-line unicorn/consistent-class-member-order -- same context */
   strictAutocomplete: boolean;
   autocompleteOptions?: NonNullable<GetAll<Extract<
     CommandOptionConfig<NoInfer<CT>, NoInfer<CTX>>, { type: T }
@@ -117,7 +117,7 @@ export class CommandOption<
     this.name = base.name;
     this.required = base.required;
     this.contexts = base.contexts;
-    this.run = base.run;
+    if (base.run) this.run = base.run;
     this.minLength = base.minLength;
     this.maxLength = base.maxLength;
     this.minValue = base.minValue;

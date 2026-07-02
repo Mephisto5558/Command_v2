@@ -48,6 +48,7 @@ export class CommandExecutionError extends Error {
   translator: Translator<boolean, Locale>;
 
   constructor(
+    /* eslint-disable-next-line unicorn/custom-error-definition -- default params must be last */
     message: string | undefined, interaction: CommandExecutionError['interaction'],
     translator: CommandExecutionError['translator'], options?: ErrorOptions
   ) {
@@ -68,6 +69,7 @@ export class CommandValidationError<
 
   constructor(
     message: string | undefined,
+    /* eslint-disable-next-line unicorn/custom-error-definition -- options is less important */
     command?: Command<NoInfer<CT>, NoInfer<CTX>>,
     commandOption?: CommandOption<NoInfer<CT>, NoInfer<CTX>>,
     options?: ErrorOptions
@@ -89,11 +91,14 @@ export function resolveCommandType<I>(interaction: I): ExtendsMatch<I, [
   [Discord.ChatInputCommandInteraction | ChatInputCommandInteraction, CommandType.Slash],
   [Discord.Message | Message, CommandType.Prefix],
   [Discord.MessageComponentInteraction | MessageComponentInteraction, CommandType.Component]
-]> {
-  if (interaction instanceof Discord.ChatInputCommandInteraction) return CommandType.Slash as ReturnType<typeof resolveCommandType<I>>;
-  if (interaction instanceof Discord.Message) return CommandType.Prefix as ReturnType<typeof resolveCommandType<I>>;
-  if (interaction instanceof Discord.MessageComponentInteraction) return CommandType.Component as ReturnType<typeof resolveCommandType<I>>;
-  return undefined as unknown as ReturnType<typeof resolveCommandType<I>>;
+]>;
+
+/** @internal */
+export function resolveCommandType(interaction: unknown): CommandType | undefined {
+  if (interaction instanceof Discord.ChatInputCommandInteraction) return CommandType.Slash;
+  if (interaction instanceof Discord.Message) return CommandType.Prefix;
+  if (interaction instanceof Discord.MessageComponentInteraction) return CommandType.Component;
+  return undefined;
 }
 
 export function isMessage(interaction: unknown): interaction is Message | Discord.Message {
