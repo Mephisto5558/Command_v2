@@ -3,13 +3,13 @@ import { readdir } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 
 import { getDirectories, getFilename, loadFile } from '../../index.ts';
-import capitalize from '../../utils/capitalize.ts';
+import { capitalize } from '../../utils/capitalize.ts';
 import { Command, CommandUninitialized } from '../command/index.ts';
 import { CommandType } from '../utils.ts';
 
 import type { I18nProvider } from '@mephisto5558/i18n';
 import type { AllContexts, Logger, commandDoneFn, customPermissionChecksFn } from '../../index.ts';
-import type CooldownsManager from '../../utils/CooldownsManager.ts';
+import type { CooldownsManager } from '../../utils/CooldownsManager.ts';
 import type { CommandOptionConfig } from '../commandOption/utils.ts';
 
 function importDefault(obj?: unknown): unknown {
@@ -226,7 +226,7 @@ export class CommandManager {
       }
     }
 
-    for (const alias of new Set([...oldCommand?.aliases[CommandType.Slash] ?? [], ...newCommand.aliases[CommandType.Slash]]))
+    for (const alias of new Set(Iterator.concat(oldCommand?.aliases[CommandType.Slash] ?? [], newCommand.aliases[CommandType.Slash])))
       await this.#registerAlias(newCommand, oldCommand, alias, isEqual, this.#appCommands);
 
     return appCommand;
