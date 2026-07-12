@@ -115,22 +115,31 @@ type InteractionChannel<
   Discord.PartialDMChannel | Discord.PartialGroupDMChannel
 >;
 
+/* eslint-disable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars
+  -- extended by the lib user */// @ts-expect-error -- extended by the lib user
+export interface CustomChatCommandInputInteractionProps<
+  CTX extends AllContexts = AllContexts,
+  Options extends readonly unknown[] = []
+> {}
+/* eslint-enable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars */
+
 export type ChatInputCommandInteraction<
   CTX extends AllContexts = AllContexts,
   Options extends readonly unknown[] = []
-> = StrictOmit<Discord.ChatInputCommandInteraction<ContextToCaching<CTX>>, 'member' | 'channel' | 'options' | 'inGuild'> & {
-  readonly member: Member<CTX, Discord.ChatInputCommandInteraction<ContextToCaching<[Discord.InteractionContextType.Guild]>>>;
+> = StrictOmit<Discord.ChatInputCommandInteraction<ContextToCaching<CTX>>, 'member' | 'channel' | 'options' | 'inGuild'>
+  & CustomChatCommandInputInteractionProps<CTX, Options> & {
+    readonly member: Member<CTX, Discord.ChatInputCommandInteraction<ContextToCaching<[Discord.InteractionContextType.Guild]>>>;
 
-  readonly channel: InteractionChannel<
-    CTX,
-    Discord.ChatInputCommandInteraction<ContextToCaching<[Discord.InteractionContextType.Guild]>>,
-    Discord.ChatInputCommandInteraction<ContextToCaching<[Discord.InteractionContextType.BotDM]>>
-  >;
+    readonly channel: InteractionChannel<
+      CTX,
+      Discord.ChatInputCommandInteraction<ContextToCaching<[Discord.InteractionContextType.Guild]>>,
+      Discord.ChatInputCommandInteraction<ContextToCaching<[Discord.InteractionContextType.BotDM]>>
+    >;
 
-  readonly options: TypeSafeOptionResolver<ContextToCaching<CTX>, Options>;
+    readonly options: TypeSafeOptionResolver<ContextToCaching<CTX>, Options>;
 
-  inGuild(): this is ChatInputCommandInteraction<readonly [ContextType.Guild], Options>;
-};
+    inGuild(): this is ChatInputCommandInteraction<readonly [ContextType.Guild], Options>;
+  };
 
 export type Message<
   CTX extends AllContexts = AllContexts

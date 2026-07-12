@@ -1,3 +1,6 @@
 {
-  "extends": "@mephisto5558/eslint-config/tsconfigs/node/tsconfig.build.json"
+  "extends": "@mephisto5558/eslint-config/tsconfigs/node/tsconfig.build.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "ESNext.Temporal"]
+  }
 }
