@@ -9,7 +9,7 @@ import type {
   AllContexts, ChatInputCommandInteraction, CommandInitialized as Command, CommandInteraction,
   Logger, Message, MessageComponentInteraction
 } from '../../index.ts';
-import type { CooldownsManager} from '../../utils/CooldownsManager.ts';
+import type { CooldownsManager } from '../../utils/CooldownsManager.ts';
 import type { RunnableReturns } from '../command/utils.ts';
 import type { CommandType } from '../utils.ts';
 import type {
@@ -516,7 +516,7 @@ export class CommandOptionUninitialized<
   type: CommandOption<NoInfer<CT>, NoInfer<CTX>, NoInfer<AO>, NoInfer<ChildrenOptions>, NoInfer<T>>['type'];
   name: CommandOption<NoInfer<CT>, NoInfer<CTX>, NoInfer<AO>, NoInfer<ChildrenOptions>, NoInfer<T>>['name'];
   options?: IfExtends<T, GetAll<Discord.ApplicationCommandOption, 'options'>['type'],
-    { ifTrue: CommandOptionUninitialized<NoInfer<CT>, NoInfer<CTX>, NoInfer<AO>>[] }
+    { ifTrue: CommandOptionConfig<NoInfer<CT>, NoInfer<CTX>, NoInfer<AO>>[] }
   > | undefined;
 
   required: CommandOption<NoInfer<CT>, NoInfer<CTX>, NoInfer<AO>, NoInfer<ChildrenOptions>, NoInfer<T>>['required'] = false;

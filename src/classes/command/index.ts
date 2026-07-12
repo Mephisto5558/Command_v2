@@ -466,7 +466,7 @@ export class CommandUninitialized<
   const Options extends OptionsG<CT, CTX> = readonly CommandOptionConfig<CT, CTX>[]
 > {
   run: Command<NoInfer<CT>, NoInfer<CTX>, NoInfer<Options>>['run'];
-  options: CommandOptionUninitialized<NoInfer<CT>, NoInfer<CTX>>[] = [];
+  options: CommandOptionConfig<NoInfer<CT>, NoInfer<CTX>>[] = [];
   usage: Command<NoInfer<CT>, NoInfer<CTX>, NoInfer<Options>>['usage'] = { usage: undefined, examples: undefined };
   cooldowns: Command<NoInfer<CT>, NoInfer<CTX>, NoInfer<Options>>['cooldowns'] = Object.fromEntries(Object.values(CooldownType).map(e => [e, 0]));
   permissions: Command<NoInfer<CT>, NoInfer<CTX>, NoInfer<Options>>['permissions'] = {

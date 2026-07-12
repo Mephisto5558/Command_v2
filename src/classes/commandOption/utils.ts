@@ -55,13 +55,17 @@ interface BasePrimitiveCommandOptionConfig<CT extends readonly CommandType[], CT
   autocompleteOptions?: autocompleteOptions<CT, CTX>;
   choices?: readonly Discord.ApplicationCommandOptionChoiceData['value'][];
 }
+type AlwaysOmitted = keyof Pick<Discord.ApplicationCommandOption, 'description' | 'descriptionLocalizations'>;
+
+type OptionOmit<Src extends object, Custom extends object, Extra extends keyof LooseOmit<Src, keyof Custom | AlwaysOmitted> = never>
+  = LooseOmit<Src, keyof Custom | AlwaysOmitted | Extra>;
 
 export interface SubcommandGroupConfig<
   CT extends readonly CommandType[], CTX extends AllContexts, AO = never,
   ChildrenOptions extends readonly SubcommandConfig<CT, CTX, unknown>[]
   /* | readonly CommandOption<CT, CTX, AO>[] */ = readonly SubcommandConfig<CT, CTX, unknown>[]
   // | readonly CommandOption<CT, CTX, AO>[]
-> extends BaseSubcommandConfig<CTX>, StrictOmit<LooseOmit<Discord.ApplicationCommandSubGroup, keyof BaseSubcommandConfig<CTX>>, 'options'> {
+> extends BaseSubcommandConfig<CTX>, OptionOmit<Discord.ApplicationCommandSubGroup, BaseSubcommandConfig<CTX>, 'options'> {
   options: ChildrenOptions;
 
   run?(
@@ -89,7 +93,7 @@ export interface SubcommandConfig<
 
   // | readonly CommandOptionUninitialized<CT, CTX, AO, never, PrimitiveCommandOptionConfig<CT, CTX>['type']>[]
   )
-> extends BaseSubcommandConfig<CTX>, StrictOmit<LooseOmit<Discord.ApplicationCommandSubCommand, keyof BaseSubcommandConfig<CTX>>, 'options'> {
+> extends BaseSubcommandConfig<CTX>, OptionOmit<Discord.ApplicationCommandSubCommand, BaseSubcommandConfig<CTX>, 'options'> {
   options?: ChildrenOptions;
 
   run?(
@@ -108,23 +112,23 @@ export interface SubcommandConfig<
 
 export interface StringCommandOptionConfig<CT extends readonly CommandType[], CTX extends AllContexts>
   extends BasePrimitiveCommandOptionConfig<CT, CTX>,
-  LooseOmit<Discord.ApplicationCommandStringOption, keyof BasePrimitiveCommandOptionConfig<CT, CTX>> {}
+  OptionOmit<Discord.ApplicationCommandStringOption, BasePrimitiveCommandOptionConfig<CT, CTX>> {}
 
 export interface NumericCommandOptionConfig<
   CT extends readonly CommandType[], CTX extends AllContexts,
   T extends Discord.ApplicationCommandNumericOption['type'] = Discord.ApplicationCommandNumericOption['type']
 > extends BasePrimitiveCommandOptionConfig<CT, CTX>,
-  LooseOmit<Discord.ApplicationCommandNumericOption, keyof BasePrimitiveCommandOptionConfig<CT, CTX>> {
+  OptionOmit<Discord.ApplicationCommandNumericOption, BasePrimitiveCommandOptionConfig<CT, CTX>> {
   type: T;
 }
 
-export interface ChannelCommandOptionConfig extends BaseOptionConfig, StrictOmit<Discord.ApplicationCommandChannelOption, keyof BaseOptionConfig> {}
+export interface ChannelCommandOptionConfig extends BaseOptionConfig, OptionOmit<Discord.ApplicationCommandChannelOption, BaseOptionConfig> {}
 
-interface BooleanCommandOptionConfig extends BaseOptionConfig, StrictOmit<Discord.ApplicationCommandBooleanOption, keyof BaseOptionConfig> {}
-interface UserCommandOptionConfig extends BaseOptionConfig, StrictOmit<Discord.ApplicationCommandUserOption, keyof BaseOptionConfig> {}
-interface RoleCommandOptionConfig extends BaseOptionConfig, StrictOmit<Discord.ApplicationCommandRoleOption, keyof BaseOptionConfig> {}
-interface MentionableCommandOptionConfig extends BaseOptionConfig, StrictOmit<Discord.ApplicationCommandMentionableOption, keyof BaseOptionConfig> {}
-interface AttachmentCommandOptionConfig extends BaseOptionConfig, StrictOmit<Discord.ApplicationCommandAttachmentOption, keyof BaseOptionConfig> {}
+interface BooleanCommandOptionConfig extends BaseOptionConfig, OptionOmit<Discord.ApplicationCommandBooleanOption, BaseOptionConfig> {}
+interface UserCommandOptionConfig extends BaseOptionConfig, OptionOmit<Discord.ApplicationCommandUserOption, BaseOptionConfig> {}
+interface RoleCommandOptionConfig extends BaseOptionConfig, OptionOmit<Discord.ApplicationCommandRoleOption, BaseOptionConfig> {}
+interface MentionableCommandOptionConfig extends BaseOptionConfig, OptionOmit<Discord.ApplicationCommandMentionableOption, BaseOptionConfig> {}
+interface AttachmentCommandOptionConfig extends BaseOptionConfig, OptionOmit<Discord.ApplicationCommandAttachmentOption, BaseOptionConfig> {}
 
 export type PrimitiveCommandOptionConfig<CT extends readonly CommandType[], CTX extends AllContexts>
   = StringCommandOptionConfig<CT, CTX>
