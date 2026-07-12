@@ -396,6 +396,8 @@ export class CommandOption<
     translator ??= this.#i18n.getTranslator({ locale, undefinedNotFound: true, backupPaths: [`${this.id}.choices`] });
 
     if (typeof options == 'function') options = await options.call(interaction, query);
+    if (options == undefined) return [];
+
     if (typeof options == 'string' || typeof options == 'number')
       return [{ name: translator(options.toString()) ?? options.toString(), value: options }];
 

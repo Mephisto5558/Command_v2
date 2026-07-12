@@ -21,7 +21,7 @@ export type autocompleteFunction<CT extends readonly CommandType[], CTX extends 
     [CommandType.Prefix, Message<NoInfer<CTX>>]
   ]>,
   query: string
-) => autocompleteOption[] | Promise<autocompleteOption[]>;
+) => autocompleteOption[] | undefined | Promise<autocompleteOption[] | undefined>;
 
 export type autocompleteOptions<CT extends readonly CommandType[], CTX extends AllContexts>
   = autocompleteOption | autocompleteOption[] | autocompleteFunction<CT, CTX>;
