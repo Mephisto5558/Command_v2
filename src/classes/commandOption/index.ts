@@ -320,6 +320,7 @@ export class CommandOption<
         if (typeof this.autocompleteOptions == 'function') return ['strictAutocompleteNoMatch', this.name];
 
         let availableOptions: string | number;
+        if (this.autocompleteOptions instanceof Iterator) availableOptions = this.autocompleteOptions.toArray();
         if (!this.autocompleteOptions) availableOptions = '';
         else if (Array.isArray(this.autocompleteOptions))
           availableOptions = this.autocompleteOptions.map(e => (typeof e == 'object' ? e.value : e).toString()).map(Discord.inlineCode).join(', ');
@@ -611,5 +612,16 @@ export class CommandOptionUninitialized<
     ...args: ConstructorParameters<typeof CommandOption<CT, CTX, AO, ChildrenOptions, T>> extends [unknown, ...infer R] ? R : never
   ): CommandOption<CT, CTX, AO, ChildrenOptions, T> {
     return new CommandOption<CT, CTX, AO, ChildrenOptions, T>(this, ...args);
+  }
+
+  /** Static constructor to create detached `CommandOption` constructor with `CT` supplied */
+  static create<CT_ extends readonly CommandType[]>() {
+    return <
+      CTX_ extends AllContexts, AO_,
+      ChildrenOptions_ extends readonly CommandOptionConfig<CT_, CTX_>[],
+      T_ extends Discord.ApplicationCommandOptionType
+    >(
+      ...constructorParams: ConstructorParameters<typeof CommandOptionUninitialized<CT_, CTX_, AO_, ChildrenOptions_, T_>>
+    ): CommandOptionUninitialized<CT_, CTX_, AO_, ChildrenOptions_, T_> => new this(...constructorParams);
   }
 }

@@ -24,7 +24,7 @@ export type autocompleteFunction<CT extends readonly CommandType[], CTX extends 
 ) => autocompleteOption[] | undefined | Promise<autocompleteOption[] | undefined>;
 
 export type autocompleteOptions<CT extends readonly CommandType[], CTX extends AllContexts>
-  = autocompleteOption | autocompleteOption[] | autocompleteFunction<CT, CTX>;
+  = autocompleteOption | autocompleteOption[] | Iterable<autocompleteOption> | autocompleteFunction<CT, CTX>;
 
 // #region option resolver
 export type MapChannelTypes<CT extends readonly Discord.ChannelType[]> = ShallowPrettify<Extract<Discord.Channel, { type: CT[number] }>>;
