@@ -15,16 +15,18 @@ export type DefaultContext = typeof DefaultContext;
 
 export type autocompleteObject = Pick<Discord.ApplicationCommandOptionChoiceData, 'name' | 'value'>;
 export type autocompleteOption = autocompleteObject['value'] | autocompleteObject;
+export type autocompleteOptionList = autocompleteOption[] | Iterable<autocompleteOption>;
+
 export type autocompleteFunction<CT extends readonly CommandType[], CTX extends AllContexts> = (
   this: ExtendsMultiMatch<CommandType, CT, [
     [CommandType.Slash, AutocompleteInteraction<NoInfer<CTX>>],
     [CommandType.Prefix, Message<NoInfer<CTX>>]
   ]>,
   query: string
-) => autocompleteOption[] | undefined | Promise<autocompleteOption[] | undefined>;
+) => autocompleteOptionList | undefined | Promise<autocompleteOptionList | undefined>;
 
 export type autocompleteOptions<CT extends readonly CommandType[], CTX extends AllContexts>
-  = autocompleteOption | autocompleteOption[] | Iterable<autocompleteOption> | autocompleteFunction<CT, CTX>;
+  = autocompleteOption | autocompleteOptionList | autocompleteFunction<CT, CTX>;
 
 // #region option resolver
 export type MapChannelTypes<CT extends readonly Discord.ChannelType[]> = ShallowPrettify<Extract<Discord.Channel, { type: CT[number] }>>;

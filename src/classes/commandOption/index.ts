@@ -615,12 +615,8 @@ export class CommandOptionUninitialized<
   }
 
   /** Static constructor to create detached `CommandOption` constructor with `CT` supplied */
-  static create<CT_ extends readonly CommandType[]>() {
-    return <
-      CTX_ extends AllContexts, AO_,
-      ChildrenOptions_ extends readonly CommandOptionConfig<CT_, CTX_>[],
-      T_ extends Discord.ApplicationCommandOptionType
-    >(
+  static create<CT_ extends readonly CommandType[], CTX_ extends AllContexts = DefaultContext, AO_ = unknown>() {
+    return <ChildrenOptions_ extends readonly CommandOptionConfig<CT_, CTX_>[], T_ extends Discord.ApplicationCommandOptionType>(
       ...constructorParams: ConstructorParameters<typeof CommandOptionUninitialized<CT_, CTX_, AO_, ChildrenOptions_, T_>>
     ): CommandOptionUninitialized<CT_, CTX_, AO_, ChildrenOptions_, T_> => new this(...constructorParams);
   }

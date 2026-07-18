@@ -7,7 +7,7 @@ import * as Discord from 'discord.js';
 
 import type { Locale, Translator } from '@mephisto5558/i18n';
 import type { Command } from './classes/command/index.ts';
-import type { CommandOption } from './classes/commandOption/index.ts';
+import type { CommandOptionUninitialized } from './classes/commandOption/index.ts';
 import type { CommandOptionConfig } from './classes/commandOption/utils.ts';
 import type { CommandType } from './classes/utils.ts';
 
@@ -68,7 +68,7 @@ export type validTimeString = BuildOrderedCooldown<TimeUnits>;
 export type Logger = Pick<Console, 'debug' | 'log' | 'warn' | 'error'>;
 
 export type OptionsG<CT extends readonly CommandType[], CTX extends AllContexts, AO = undefined>
-  = readonly (CommandOptionConfig<CT, CTX, AO> | CommandOption<CT, CTX, AO>)[];
+  = readonly (CommandOptionConfig<CT, CTX, AO> | CommandOptionUninitialized<CT, CTX, AO>)[];
 
 export enum CooldownType {
   Guild = 'guild',
